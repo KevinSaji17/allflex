@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div>
+    <!-- Hero Section -->
+    <div class="relative overflow-hidden py-32 px-6 sm:py-40">
+        <div class="absolute inset-0 bg-gradient-to-br from-teal-50 via-purple-50 to-pink-50"></div>
+        <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-br from-teal-300 to-cyan-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        
+        <div class="relative max-w-4xl mx-auto container">
+            <div class="text-center">
+                <div class="inline-block mb-4 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-sm font-semibold">
+                    ✨ Your Fitness Revolution Starts Here
+                </div>
+                <h1 class="text-5xl md:text-7xl font-black leading-tight mb-6">
+                    <span class="gradient-text">Unlimited Fitness.</span>
+                    <br>
+                    <span class="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-transparent bg-clip-text">One Membership.</span>
+                </h1>
+                <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed">
+                    Access the best gyms around you with a single pass. Choose your tier, book instantly, earn rewards, and stay flexible — no lock-ins, no limits.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="{% url 'signup' %}" class="inline-block bg-gradient-to-r from-teal-500 to-cyan-500 hover:shadow-2xl text-white font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-105">
+                        🚀 Start Your Journey
+                    </a>
+                    <a href="#pricing" class="inline-block bg-white hover:bg-gray-50 border-2 border-gray-200 text-gray-900 font-bold py-4 px-10 rounded-xl text-lg transition-all">
+                        💰 View Pricing
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="py-16 bg-white/50 backdrop-blur-sm">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                <div class="group">
+                    <h3 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">500+</h3>
+                    <p class="text-gray-600 mt-2 font-semibold group-hover:text-purple-600 transition">Partner Gyms</p>
+                </div>
+                <div class="group">
+                    <h3 class="text-4xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">50K+</h3>
+                    <p class="text-gray-600 mt-2 font-semibold group-hover:text-teal-600 transition">Active Members</p>
+                </div>
+                <div class="group">
+                    <h3 class="text-4xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">25+</h3>
+                    <p class="text-gray-600 mt-2 font-semibold group-hover:text-orange-600 transition">Cities</p>
+                </div>
+                <div class="group">
+                    <h3 class="text-4xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">4.8 ★</h3>
+                    <p class="text-gray-600 mt-2 font-semibold group-hover:text-green-600 transition">Rating</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="py-24 px-6">
+        <div class="container mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">Why Choose AllFlex?</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">Unlock the power of flexible fitness</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="group relative bg-white rounded-2xl p-8 border border-gray-100 hover:border-purple-200 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-purple-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative">
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-2xl mb-4 shadow-lg">
+                            📍
+                        </div>
+                        <h3 class="text-2xl font-bold mb-3">Nationwide Access</h3>
+                        <p class="text-gray-600 leading-relaxed">Access thousands of premium gyms across the country with a single membership.</p>
+                    </div>
+                </div>
+                <!-- Feature 2 -->
+                <div class="group relative bg-white rounded-2xl p-8 border border-gray-100 hover:border-teal-200 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative">
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center text-white text-2xl mb-4 shadow-lg">
+                            ⏱️
+                        </div>
+                        <h3 class="text-2xl font-bold mb-3">Flexible Plans</h3>
+                        <p class="text-gray-600 leading-relaxed">Choose from 4 tiers designed to match your fitness goals and budget.</p>
+                    </div>
+                </div>
+                <!-- Feature 3 -->
+                <div class="group relative bg-white rounded-2xl p-8 border border-gray-100 hover:border-orange-200 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative">
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-400 to-red-400 flex items-center justify-center text-white text-2xl mb-4 shadow-lg">
+                            👑
+                        </div>
+                        <h3 class="text-2xl font-bold mb-3">Premium Experience</h3>
+                        <p class="text-gray-600 leading-relaxed">Enjoy elite amenities, personal training, and exclusive member benefits.</p>
+                    </div>
+                </div>
+                <!-- Feature 4 -->
+                <div class="group relative bg-white rounded-2xl p-8 border border-gray-100 hover:border-green-200 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative">
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-green-400 to-emerald-400 flex items-center justify-center text-white text-2xl mb-4 shadow-lg">
+                            ✅
+                        </div>
+                        <h3 class="text-2xl font-bold mb-3">Easy Booking</h3>
+                        <p class="text-gray-600 leading-relaxed">Book your gym sessions instantly through our seamless mobile and web platform.</p>
+                    </div>
+                </div>
+                 <!-- Feature 5 -->
+                <div class="group relative bg-white rounded-2xl p-8 border border-gray-100 hover:border-indigo-200 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative">
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white text-2xl mb-4 shadow-lg">
+                            🔓
+                        </div>
+                        <h3 class="text-2xl font-bold mb-3">No Commitments</h3>
+                        <p class="text-gray-600 leading-relaxed">Stay in control with no lock-in contracts or hidden fees. Cancel anytime.</p>
+                    </div>
+                </div>
+                 <!-- Feature 6 -->
+                <div class="group relative bg-white rounded-2xl p-8 border border-gray-100 hover:border-blue-200 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative">
+                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white text-2xl mb-4 shadow-lg">
+                            👁️
+                        </div>
+                        <h3 class="text-2xl font-bold mb-3">Full Transparency</h3>
+                        <p class="text-gray-600 leading-relaxed">Clear, upfront pricing and policies. Know exactly what you're paying for.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CTA Section -->
+    <div id="pricing" class="py-20 px-6 bg-gradient-to-r from-teal-600 via-cyan-500 to-blue-600 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 mix-blend-multiply" style="background-image: radial-gradient(circle at 20% 50%, white, transparent 50%), radial-gradient(circle at 80% 50%, white, transparent 50%)"></div>
+        <div class="container mx-auto text-center relative">
+            <h2 class="text-4xl font-bold text-white mb-4">Ready to Transform Your Fitness?</h2>
+            <p class="text-lg text-cyan-100 max-w-2xl mx-auto mb-8">
+                Join thousands of fitness enthusiasts who have already discovered the freedom of flexible gym access.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{% url 'signup' %}" class="inline-block bg-white hover:bg-gray-100 text-teal-600 font-bold py-4 px-10 rounded-xl text-lg transition-all transform hover:scale-105 shadow-lg">
+                    Get Started Today
+                </a>
+                <a href="{% url 'plans' %}" class="inline-block bg-white/20 hover:bg-white/30 text-white font-bold py-4 px-10 rounded-xl text-lg transition-all border-2 border-white/50">
+                    View Plans
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    @keyframes blob {
+        0%, 100% {
+            transform: translate(0, 0) scale(1);
+        }
+        33% {
+            transform: translate(30px, -50px) scale(1.1);
+        }
+        66% {
+            transform: translate(-20px, 20px) scale(0.9);
+        }
+    }
+    
+    .animate-blob {
+        animation: blob 7s infinite;
+    }
+    
+    .animation-delay-2000 {
+        animation-delay: 2s;
+    }
+</style>
+{% endblock %}
