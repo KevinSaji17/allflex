@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="bg-gray-100 min-h-screen">
+    <div class="bg-gray-800 text-white py-10">
+        <div class="container mx-auto px-6">
+            <h1 class="text-3xl font-bold">Gym Owner Dashboard</h1>
+        </div>
+    </div>
+    
+    <div class="container mx-auto px-6 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold text-gray-700">Total Bookings</h2>
+                <p class="text-3xl mt-2 text-gray-900">{{ total_bookings }}</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold text-gray-700">Wallet Balance</h2>
+                <p class="text-3xl mt-2 text-gray-900">${{ total_wallet_balance|floatformat:2 }}</p>
+            </div>
+        </div>
+
+        <!-- My Gyms Section -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">My Gyms</h2>
+            {% for gym in owned_gyms %}
+                <div class="border-b last:border-b-0 py-4 mb-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-900">{{ gym.name }}</h3>
+                            <p class="text-gray-500">{{ gym.location }}</p>
+                        </div>
+                        <span class="text-sm font-semibold px-3 py-1 rounded-full
+                            {% if gym.status == 'approved' %}bg-green-100 text-green-800
+                            {% elif gym.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ gym.get_status_display }}
+                        </span>
+                    </div>
+                    {% if gym.status == 'rejected' %}
+                        <p class="text-red-600 mt-2 text-sm">Your gym application was rejected. Please review our terms or contact support.</p>
+                    {% elif gym.status == 'pending' %}
+                        <p class="text-yellow-600 mt-2 text-sm">Your gym is currently under review by our team.</p>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <p class="text-gray-500">You have not listed any gyms yet.</p>
+            {% endfor %}
+        </div>
+
+        <!-- Recent Bookings Table -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Recent Bookings</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-gray-800">
+                    <thead>
+                        <tr class="text-gray-600 border-b">
+                            <th class="p-3 font-semibold">User</th>
+                            <th class="p-3 font-semibold">Gym</th>
+                            <th class="p-3 font-semibold">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in bookings|slice:":10" %} {# Show latest 10 bookings #}
+                        <tr class="border-b">
+                            <td class="p-3">{{ booking.user.user.username }}</td>
+                            <td class="p-3">{{ booking.gym.name }}</td>
+                            <td class="p-3">{{ booking.timestamp|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="p-3 text-center text-gray-500">No bookings found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %} 

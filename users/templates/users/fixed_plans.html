@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="bg-gradient-to-b from-black via-gray-900 to-black min-h-screen py-16 text-white">
+  <div class="container mx-auto px-4 max-w-4xl">
+    <h1 class="text-4xl font-extrabold mb-2 text-center tracking-tight">Unlimited Plans</h1>
+    <p class="text-gray-300 text-center mb-10 text-lg">Go unlimited and unlock the best of ALLFLEX. No limits, no lock-ins, just pure fitness freedom.</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+      {% for plan in plans %}
+      <div class="relative bg-white p-8 rounded-xl border border-gray-200 hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-gray-900">
+        {% if plan.highlight %}
+          <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-bold px-6 py-2 rounded-full shadow-lg z-10 uppercase tracking-wider">Most Popular</div>
+        {% endif %}
+        <div class="{{ plan.icon_bg }} {{ plan.icon_color }} w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+          {% if plan.icon == 'bolt' %}
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          {% elif plan.icon == 'star' %}
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></svg>
+          {% elif plan.icon == 'crown' %}
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 19l4-14 6 7 6-7 4 14H2z"/></svg>
+          {% endif %}
+        </div>
+        <h3 class="text-xl font-bold mb-3 text-center">{{ plan.name }}</h3>
+        <div class="text-4xl font-extrabold text-yellow-500 mb-2 text-center">₹{{ plan.price }}</div>
+        <ul class="text-left text-gray-700 mb-6 space-y-2 w-full">
+          {% for feature in plan.features %}
+            <li class="flex items-center"><svg class="w-4 h-4 text-green-400 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>{{ feature }}</li>
+          {% endfor %}
+        </ul>
+        <p class="text-gray-500 text-center mb-6">Unlimited access to all partner gyms. One price, no limits, no surprises.</p>
+        <button class="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg mt-auto text-lg shadow">Choose Plan</button>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-8">
+      <a href="{% url 'plans' %}" class="text-blue-400 hover:underline">Back to Credit Packs</a>
+    </div>
+  </div>
+</div>
+{% endblock %} 

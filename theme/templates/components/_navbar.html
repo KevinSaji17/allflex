@@ -1,0 +1,37 @@
+<nav class="bg-white border-b shadow-sm">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex items-center gap-3">
+                <a href="{% url 'home' %}" class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">Ⓐ</div>
+                    <span class="text-lg font-semibold text-slate-900 hidden sm:inline">ALLFLEX</span>
+                </a>
+            </div>
+
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="{% url 'plans' %}" class="text-slate-700 hover:text-slate-900">Plans</a>
+                <a href="#" class="text-slate-700 hover:text-slate-900">Find Gyms</a>
+                <a href="#" class="text-slate-700 hover:text-slate-900">List Business</a>
+            </div>
+
+            <div class="hidden md:flex items-center space-x-4">
+                {% if user.is_authenticated %}
+                    <span class="text-sm text-slate-700">{{ user.first_name|default:user.username }}</span>
+                    <form method="post" action="{% url 'logout' %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm px-3 py-1 rounded-md border border-slate-200 hover:bg-slate-50">Sign out</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'signup' %}" class="text-sm text-slate-700 hover:text-slate-900">Sign up</a>
+                    <a href="{% url 'login' %}" class="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Login</a>
+                {% endif %}
+            </div>
+
+            <div class="md:hidden">
+                <button aria-label="Open menu" class="p-2 rounded-md text-slate-700 hover:bg-slate-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>

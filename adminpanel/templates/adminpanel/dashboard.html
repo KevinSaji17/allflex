@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="bg-gray-100 min-h-screen">
+    <div class="bg-gray-800 text-white py-10">
+        <div class="container mx-auto px-6">
+            <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+            <p class="text-gray-300 mt-2">Manage users, gyms, and platform settings</p>
+        </div>
+    </div>
+    
+    <div class="container mx-auto px-6 py-8">
+        <!-- Display Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="p-4 mb-4 text-sm rounded-lg {% if message.tags == 'success' %} bg-green-100 text-green-800 {% elif message.tags == 'warning' %} bg-yellow-100 text-yellow-800 {% else %} bg-blue-100 text-blue-800 {% endif %}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold text-gray-700">Total Users</h2>
+                <p class="text-3xl mt-2 text-gray-900">{{ total_users }}</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold text-gray-700">Total Gyms</h2>
+                <p class="text-3xl mt-2 text-gray-900">{{ total_gyms }}</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold text-gray-700">Pending Gym Approvals</h2>
+                <p class="text-3xl mt-2 text-gray-900">{{ pending_gyms_count }}</p>
+            </div>
+        </div>
+
+        <!-- Pending Gyms Table -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Pending Gyms</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-gray-800">
+                    <thead>
+                        <tr class="text-gray-600 border-b">
+                            <th class="p-3 font-semibold">Name</th>
+                            <th class="p-3 font-semibold">Owner</th>
+                            <th class="p-3 font-semibold">Location</th>
+                            <th class="p-3 font-semibold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gym in pending_gyms %}
+                        <tr class="border-b">
+                            <td class="p-3">{{ gym.name }}</td>
+                            <td class="p-3">{{ gym.owner.username }}</td>
+                            <td class="p-3">{{ gym.location }}</td>
+                            <td class="p-3 flex space-x-2">
+                                <a href="{% url 'approve_gym' gym.id %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded">Approve</a>
+                                <a href="{% url 'reject_gym' gym.id %}" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded">Reject</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="p-3 text-center text-gray-500">No gyms pending approval.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- All Users Table -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">All Users</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-gray-800">
+                    <thead>
+                        <tr class="text-gray-600 border-b">
+                            <th class="p-3 font-semibold">Username</th>
+                            <th class="p-3 font-semibold">Email</th>
+                            <th class="p-3 font-semibold">Role</th>
+                            <th class="p-3 font-semibold">Date Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in all_users %}
+                        <tr class="border-b">
+                            <td class="p-3">{{ user.username }}</td>
+                            <td class="p-3">{{ user.email }}</td>
+                            <td class="p-3">{{ user.get_role_display }}</td>
+                            <td class="p-3">{{ user.date_joined|date:"Y-m-d" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Quick Actions</h2>
+            <div class="flex space-x-4">
+                <a href="{% url 'home' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">View Homepage</a>
+                <a href="{% url 'logout' %}" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

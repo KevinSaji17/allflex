@@ -1,0 +1,23 @@
+{% load static tailwind_tags %}
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="light dark">
+		<title>ALLFLEX</title>
+		{% tailwind_css %}
+	</head>
+
+	<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+		<div id="site-root" class="flex flex-col min-h-screen">
+			{% include 'components/_navbar.html' %}
+
+			<main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+				{% block content %}{% endblock %}
+			</main>
+
+			{% include 'components/_footer.html' %}
+		</div>
+	</body>
+</html>

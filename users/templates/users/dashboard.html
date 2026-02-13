@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-teal-600 via-purple-600 to-pink-600 text-white py-16 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 mix-blend-multiply" style="background-image: radial-gradient(circle at 20% 50%, white, transparent 50%), radial-gradient(circle at 80% 50%, white, transparent 50%)"></div>
+        <div class="container mx-auto px-6 relative">
+            <h1 class="text-4xl font-bold">👋 Welcome back, {{ user.first_name|default:user.username }}!</h1>
+            <p class="text-purple-100 mt-2 text-lg">Find gyms near you and track your fitness journey.</p>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-6 py-12">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+            <!-- Credits Card -->
+            <div class="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-teal-200 transition-all duration-300 overflow-hidden relative">
+                <div class="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-gray-600 text-sm font-semibold">Available Credits</p>
+                        <span class="text-3xl">💳</span>
+                    </div>
+                    <p class="text-4xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent" id="userCreditsDisplay">{{ user.credits|default:0 }}</p>
+                </div>
+            </div>
+            
+            <!-- Tier 1 Visits Card -->
+            <div class="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300 overflow-hidden relative">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-gray-600 text-sm font-semibold">Tier 1 Visits</p>
+                        <span class="text-3xl">🏋️</span>
+                    </div>
+                    <p class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent" id="t1Visits">0</p>
+                </div>
+            </div>
+
+            <!-- Plan Status Card -->
+            <div class="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-amber-200 transition-all duration-300 overflow-hidden relative">
+                <div class="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-gray-600 text-sm font-semibold">Plan Status</p>
+                        <span class="text-3xl">⭐</span>
+                    </div>
+                    <p class="text-xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">{{ user.get_plan_display|default:"Free" }}</p>
+                </div>
+            </div>
+
+            <!-- Get More Credits Card -->
+            <a href="{% url 'plans' %}" class="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-purple-200 transition-all duration-300 overflow-hidden relative">
+                <div class="absolute inset-0 bg-gradient-to-br from-purple-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-gray-600 text-sm font-semibold">Get More</p>
+                        <span class="text-3xl group-hover:scale-125 transition-transform">📈</span>
+                    </div>
+                    <p class="text-lg font-bold text-purple-600 group-hover:text-purple-700">View Plans →</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Gym Finder Section -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-12">
+            <div class="max-w-2xl mx-auto">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">🔍 Find Gyms Near You</h2>
+                <p class="text-gray-600 mb-8">Enter a pincode to discover nearby fitness centers and use your credits.</p>
+                
+                <form id="gymSearchForm" class="flex gap-3 mb-8">
+                    {% csrf_token %}
+                    <input type="text" 
+                           id="pincodeInput" 
+                           name="pincode"
+                           placeholder="Enter pincode (e.g., 400001)" 
+                           class="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                    <button type="submit" 
+                            id="findGymsBtn"
+                            class="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
+                        Search
+                    </button>
+                </form>
+                
+                <!-- Loading indicator -->
+                <div id="loadingIndicator" class="hidden text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-t-teal-600 border-gray-200"></div>
+                    <p class="mt-3 text-gray-600">⏳ Finding gyms near you...</p>
+                </div>
+                
+                <!-- Error message -->
+                <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                    <!-- Error message will be inserted here -->
+                </div>
+
+                <!-- Success message -->
+                <div id="successMessage" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
+                    <!-- Success message will be inserted here -->
+                </div>
+                
+                <!-- Results container -->
+                <div id="gymResults" class="hidden">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">✅ Available Gyms</h3>
+                    <div id="gymList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Gym cards will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Bookings Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.3A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900">Upcoming Bookings</h3>
+                </div>
+                <p class="text-gray-600">You have no upcoming bookings.</p>
+            </div>
+
+            <!-- Favorites Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900">Favorite Gyms</h3>
+                </div>
+                <p class="text-gray-600 mb-4">You haven't favorited any gyms yet.</p>
+                <a href="{% url 'plans' %}" class="text-teal-600 hover:text-teal-700 font-medium">Explore Plans & Credits →</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// Tier costs for credits
+const TIER_COSTS = {1: 5, 2: 9, 3: 13, 4: 18};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('gymSearchForm');
+    const pincodeInput = document.getElementById('pincodeInput');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const gymResults = document.getElementById('gymResults');
+    const errorMessage = document.getElementById('errorMessage');
+    const findGymsBtn = document.getElementById('findGymsBtn');
+    
+    // Update tier visits on page load
+    updateTierVisits();
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const pincode = pincodeInput.value.trim();
+        
+        if (!pincode) {
+            showError('Please enter a pincode');
+            return;
+        }
+        
+        // Reset messages
+        gymResults.classList.add('hidden');
+        errorMessage.classList.add('hidden');
+        
+        // Show loading
+        loadingIndicator.classList.remove('hidden');
+        findGymsBtn.disabled = true;
+        findGymsBtn.innerHTML = '<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/></svg>';
+        
+        try {
+            const response = await fetch('{% url "find_gyms_by_pincode" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ pincode: pincode })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                showError(data.error);
+            } else {
+                displayGyms(data);
+            }
+            
+        } catch (error) {
+            showError('Failed to find gyms. Please try again.');
+            console.error('Error:', error);
+        } finally {
+            loadingIndicator.classList.add('hidden');
+            findGymsBtn.disabled = false;
+            findGymsBtn.textContent = 'Search';
+        }
+    });
+    
+    function displayGyms(gyms) {
+        const gymList = document.getElementById('gymList');
+        gymList.innerHTML = '';
+        
+        if (!gyms || Object.keys(gyms).length === 0) {
+            gymList.innerHTML = '<p class="text-gray-500 text-center col-span-2 py-8">No gyms found in this area. Try another pincode.</p>';
+        } else {
+            Object.entries(gyms).forEach(([gymName, gymInfo]) => {
+                const gymCard = createGymCard(gymName, gymInfo);
+                gymList.appendChild(gymCard);
+            });
+            
+            // Attach event listeners to use-visit buttons
+            document.querySelectorAll('.use-visit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const gymName = this.getAttribute('data-gym-name');
+                    const tier = parseInt(this.getAttribute('data-tier'));
+                    useVisit(gymName, tier, this);
+                });
+            });
+        }
+        
+        gymResults.classList.remove('hidden');
+    }
+
+    function createGymCard(gymName, gymInfo) {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow';
+        
+        let distance = 'N/A';
+        let rating = 'N/A';
+        
+        if (typeof gymInfo === 'string') {
+            distance = gymInfo;
+        } else if (typeof gymInfo === 'object') {
+            distance = gymInfo.distance || 'N/A';
+            rating = gymInfo.rating || 'N/A';
+        }
+        
+        const tier = 1; // MVP: default to Tier 1
+        const cost = TIER_COSTS[tier] || 5;
+        
+        card.innerHTML = `
+            <h4 class="font-bold text-gray-900 text-lg mb-3">${gymName}</h4>
+            <div class="flex gap-4 text-sm text-gray-600 mb-4">
+                <span class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+                    ${distance}
+                </span>
+                <span class="flex items-center gap-1">
+                    <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    ${rating}
+                </span>
+            </div>
+            <button type="button" class="use-visit-btn w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                    data-gym-name="${gymName.replace(/"/g, '&quot;')}" 
+                    data-tier="${tier}">
+                Use 1 Visit (${cost} credits)
+            </button>
+        `;
+        
+        return card;
+    }
+
+    async function useVisit(gymName, tier, buttonEl) {
+        const cost = TIER_COSTS[tier] || 5;
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const creditsDisplay = document.getElementById('userCreditsDisplay');
+        
+        errorMessage.classList.add('hidden');
+        successMessage.classList.add('hidden');
+
+        buttonEl.disabled = true;
+        buttonEl.textContent = 'Processing...';
+        
+        try {
+            const response = await fetch('{% url "use_visit" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ gym_name: gymName, tier: tier })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                showError(data.error || 'Failed to use visit.');
+                buttonEl.disabled = false;
+                buttonEl.textContent = `Use 1 Visit (${cost} credits)`;
+                return;
+            }
+            
+            creditsDisplay.textContent = data.new_balance;
+            updateTierVisits();
+            successMessage.textContent = `✓ Successfully used 1 visit at ${gymName}. ${cost} credits deducted. Balance: ${data.new_balance}`;
+            successMessage.classList.remove('hidden');
+            buttonEl.textContent = '✓ Used';
+            buttonEl.disabled = true;
+            
+        } catch (err) {
+            showError('Request failed. Please try again.');
+            buttonEl.disabled = false;
+            buttonEl.textContent = `Use 1 Visit (${cost} credits)`;
+            console.error('Error:', err);
+        }
+    }
+    
+    function showError(message) {
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.textContent = '✕ ' + message;
+        errorMessage.classList.remove('hidden');
+    }
+
+    function updateTierVisits() {
+        const creditsStr = document.getElementById('userCreditsDisplay').textContent;
+        const credits = parseInt(creditsStr) || 0;
+        
+        document.getElementById('t1Visits').textContent = Math.floor(credits / TIER_COSTS[1]);
+    }
+});
+</script>
+{% endblock %} 
