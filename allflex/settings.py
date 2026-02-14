@@ -127,6 +127,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Required for `collectstatic`
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'theme' / 'static',
 ]
@@ -140,6 +143,11 @@ AUTH_USER_MODEL = 'accounts.UserProfile'
 
 LOGIN_REDIRECT_URL = 'role_redirect'
 LOGOUT_REDIRECT_URL = 'home'
+
+# Keep users signed in during development.
+# If you want "log out when browser closes", set SESSION_EXPIRE_AT_BROWSER_CLOSE = True.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 days
 
 # Tailwind CSS configuration
 TAILWIND_APP_NAME = 'theme'

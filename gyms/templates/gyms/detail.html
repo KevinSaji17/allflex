@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ gym.name }} - ALLFLEX{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-8">
+  <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900">{{ gym.name }}</h1>
+        <p class="mt-2 text-slate-600">{{ gym.location }}</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Tier {{ gym.tier }}</span>
+          <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Active</span>
+        </div>
+      </div>
+
+      <div class="w-full sm:w-auto">
+        {% if user.is_authenticated %}
+          <a href="{% url 'user_dashboard' %}" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
+            Book from Dashboard
+          </a>
+          <p class="mt-2 text-xs text-slate-500">Booking deducts credits immediately.</p>
+        {% else %}
+          <a href="{% url 'login' %}" class="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
+            Login to Book
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-lg font-bold text-slate-900">About</h2>
+      <p class="mt-2 text-slate-700 leading-relaxed">{{ gym.description }}</p>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <h2 class="text-lg font-bold text-slate-900">Credits</h2>
+    <p class="mt-2 text-slate-600">Tier-based cost is shown on your dashboard when booking.</p>
+  </div>
+</div>
+{% endblock %}

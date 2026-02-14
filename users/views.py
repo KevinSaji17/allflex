@@ -1,14 +1,14 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from .models import CreditPack, UserCreditBalance, CreditTransaction
+from .models import CreditPack, UserCreditBalance, CreditTransaction, GymBooking, TIER_CREDIT_COSTS
 from gyms.models import Gym
 from allflex.gym_recommender import get_gyms_by_pincode
 import json
 
-# Credits cost per gym tier (1 visit)
-TIER_CREDITS = {1: 5, 2: 9, 3: 13, 4: 18}
+# Credits cost per gym tier (1 booking)
+TIER_CREDITS = TIER_CREDIT_COSTS
 
 # Custom icon/color/feature data for credit packs
 CREDIT_PACK_STYLES = [
@@ -79,6 +79,8 @@ UNLIMITED_PLAN_STYLES = [
 
 # Create your views here.
 def home(request):
+    if request.user.is_authenticated:
+        return redirect('role_redirect')
     return render(request, 'users/home.html')
 
 def plans(request):
@@ -101,9 +103,29 @@ def find_gyms_by_pincode(request):
         if not pincode:
             return JsonResponse({'error': 'Please enter a pincode'}, status=400)
         
-        # Get gyms from AI service
+        # Get gyms from AI service (name -> info)
         gym_data = get_gyms_by_pincode(pincode)
-        
+
+        # Try to enrich with DB gym IDs when names match approved gyms
+        if isinstance(gym_data, dict) and gym_data:
+            approved = Gym.objects.filter(status='approved', is_active=True)
+            by_name = {g.name.strip().lower(): g for g in approved}
+            enriched = {}
+            for gym_name, info in gym_data.items():
+                gym_obj = by_name.get((gym_name or '').strip().lower())
+                if isinstance(info, dict):
+                    enriched_info = dict(info)
+                    if gym_obj:
+                        enriched_info.setdefault('id', gym_obj.id)
+                    enriched[gym_name] = enriched_info
+                else:
+                    # keep string distance format
+                    if gym_obj:
+                        enriched[gym_name] = {'distance': info, 'id': gym_obj.id}
+                    else:
+                        enriched[gym_name] = info
+            gym_data = enriched
+
         return JsonResponse(gym_data)
         
     except json.JSONDecodeError:
@@ -116,7 +138,7 @@ def find_gyms_by_pincode(request):
 @require_http_methods(["POST"])
 def use_visit(request):
     """
-    MVP: Use 1 visit at a gym — deduct credits and log transaction.
+    Deprecated: Use booking endpoint instead.
     POST body: { "gym_name": "...", "tier": 1 } (tier defaults to 1)
     """
     try:
@@ -127,29 +149,78 @@ def use_visit(request):
             tier = 1
         cost = TIER_CREDITS[tier]
 
+        return JsonResponse({
+            'error': 'This action is no longer available. Please book a slot instead.'
+        }, status=410)
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid request format'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def create_booking(request):
+    """
+    Create a booking and deduct credits immediately (booking time).
+    POST body: {"gym_id": 123, "tier": 1}
+    """
+    try:
+        data = json.loads(request.body)
+        gym_id = data.get('gym_id')
+        gym_name = (data.get('gym_name') or '').strip()
+        tier = int(data.get('tier', 1))
+        if tier not in TIER_CREDITS:
+            tier = 1
+
+        # Demo behavior: every booking costs a flat 5 credits
+        cost = 5
+
+        gym = None
+        if gym_id:
+            gym = Gym.objects.filter(id=gym_id, status='approved', is_active=True).first()
+        elif gym_name:
+            gym = Gym.objects.filter(name__iexact=gym_name, status='approved', is_active=True).first()
+
+        if not gym:
+            return JsonResponse({'error': 'Gym not available'}, status=404)
+
         user = request.user
         if user.credits < cost:
             return JsonResponse({
-                'error': f'Not enough credits. Need {cost}, you have {user.credits}. Get more on Plans & Credits.'
+                'error': f'Not enough credits. Need {cost}, you have {user.credits}.'
             }, status=400)
 
         user.credits -= cost
         user.save(update_fields=['credits'])
 
+        booking = GymBooking.objects.create(
+            user=user,
+            gym=gym,
+            tier=tier,
+            credits_charged=cost,
+            notes='',
+        )
+
         CreditTransaction.objects.create(
             user=user,
             credits=-cost,
             transaction_type='visit',
-            gym=None,
-            notes=gym_name,
+            gym=gym,
+            notes=f'Booking #{booking.id}',
         )
 
         return JsonResponse({
             'success': True,
+            'booking_id': booking.id,
             'new_balance': user.credits,
-            'used': cost,
-            'gym_name': gym_name,
+            'charged': cost,
+            'gym': {'id': gym.id, 'name': gym.name},
         })
+
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Invalid input'}, status=400)
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid request format'}, status=400)
     except Exception as e:
