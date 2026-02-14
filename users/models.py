@@ -1,5 +1,8 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
+
+TIER_CREDIT_COSTS = {1: 5, 2: 9, 3: 13, 4: 18}
 
 # Create your models here.
 
@@ -38,3 +41,25 @@ class CreditTransaction(models.Model):
 
     def __str__(self):
         return f"{self.user.username} {self.transaction_type} {self.credits} credits"
+
+
+class GymBooking(models.Model):
+    STATUS_CHOICES = (
+        ('booked', 'Booked'),
+        ('cancelled', 'Cancelled'),
+        ('checked_in', 'Checked In'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='gym_bookings')
+    gym = models.ForeignKey('gyms.Gym', on_delete=models.CASCADE, related_name='bookings')
+    tier = models.PositiveSmallIntegerField(default=1)
+    credits_charged = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='booked')
+    booked_at = models.DateTimeField(default=timezone.now)
+    notes = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ['-booked_at']
+
+    def __str__(self):
+        return f"{self.user.username} booking at {self.gym.name}"

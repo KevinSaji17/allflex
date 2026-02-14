@@ -8,5 +8,6 @@ urlpatterns = [
     path('plans/', plans_and_credits, name='plans'),
     path('fixed-plans/', fixed_plans, name='fixed_plans'),
     path('find-gyms/', views.find_gyms_by_pincode, name='find_gyms_by_pincode'),
+    path('book/', views.create_booking, name='create_booking'),
     path('use-visit/', views.use_visit, name='use_visit'),
 ] 

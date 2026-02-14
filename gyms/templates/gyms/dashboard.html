@@ -64,7 +64,7 @@
                     <tbody>
                         {% for booking in bookings|slice:":10" %} {# Show latest 10 bookings #}
                         <tr class="border-b">
-                            <td class="p-3">{{ booking.user.user.username }}</td>
+                            <td class="p-3">{{ booking.user.username }}</td>
                             <td class="p-3">{{ booking.gym.name }}</td>
                             <td class="p-3">{{ booking.timestamp|date:"Y-m-d H:i" }}</td>
                         </tr>
