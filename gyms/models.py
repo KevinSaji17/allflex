@@ -58,3 +58,54 @@ class PayoutRequest(models.Model):
 
     def __str__(self):
         return f'Payout request from {self.gym_owner.username} for {self.amount}'
+
+class CreditPack(models.Model):
+    TIER_CHOICES = (
+        (1, 'Tier 1'),
+        (2, 'Tier 2'),
+        (3, 'Tier 3'),
+        (4, 'Tier 4'),
+    )
+    
+    name = models.CharField(max_length=255)
+    tier = models.IntegerField(choices=TIER_CHOICES)
+    credits = models.PositiveIntegerField(help_text="Number of gym visit credits")
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    validity_days = models.PositiveIntegerField(help_text="Number of days the pack is valid for")
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['tier', 'price']
+
+    def __str__(self):
+        return f'{self.name} - {self.credits} credits (Tier {self.tier})'
+
+class UserCreditPack(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='credit_packs')
+    credit_pack = models.ForeignKey(CreditPack, on_delete=models.CASCADE)
+    remaining_credits = models.PositiveIntegerField()
+    purchased_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-purchased_at']
+
+    def __str__(self):
+        return f'{self.user.username} - {self.remaining_credits} credits remaining'
+
+    def is_expired(self):
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+
+    def deduct_credit(self):
+        if self.remaining_credits > 0 and not self.is_expired():
+            self.remaining_credits -= 1
+            if self.remaining_credits == 0:
+                self.is_active = False
+            self.save()
+            return True
+        return False
