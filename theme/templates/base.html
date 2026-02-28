@@ -5,7 +5,7 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="color-scheme" content="light dark">
-		<title>ALLFLEX</title>
+		<title>{% block title %}ALLFLEX{% endblock %}</title>
 		{% tailwind_css %}
 	</head>
 
@@ -19,5 +19,6 @@
 
 			{% include 'components/_footer.html' %}
 		</div>
+		{% block extra_js %}{% endblock %}
 	</body>
 </html>

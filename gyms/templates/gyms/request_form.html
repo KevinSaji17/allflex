@@ -1,0 +1,487 @@
+{% extends 'base.html' %}
+
+{% block title %}Gym Owner Account Request - ALLFLEX{% endblock %}
+
+{% block content %}
+<style>
+  .facility-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+  }
+  
+  .facility-checkbox:hover {
+    border-color: #14b8a6;
+    background-color: #f0fdfa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(20, 184, 166, 0.1);
+  }
+  
+  .facility-checkbox input[type="checkbox"]:checked {
+    accent-color: #14b8a6;
+  }
+  
+  .facility-checkbox:has(input:checked) {
+    border-color: #14b8a6;
+    background-color: #f0fdfa;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+  }
+  
+  .facility-checkbox:has(input:checked) span {
+    color: #0f766e;
+    font-weight: 600;
+  }
+  
+  .tier-section {
+    margin-bottom: 24px;
+  }
+  
+  .tier-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+  
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="file"],
+  textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+  }
+  
+  #gymSearchResults {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .gym-result-item {
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .gym-result-item:hover {
+    background-color: #f0fdfa;
+    border-color: #14b8a6;
+  }
+</style>
+
+<div class="max-w-5xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <a href="{% url 'user_dashboard' %}" class="text-sm text-teal-600 hover:text-teal-700 font-semibold mb-3 inline-block">
+      ← Back to Dashboard
+    </a>
+    <h1 class="text-4xl font-bold text-slate-900 mb-3">Request Gym Owner Account</h1>
+    <p class="text-lg text-slate-600">Fill out the details below. Our AI will analyze your submission and our team will review it within 24-48 hours.</p>
+  </div>
+
+  <!-- Info Cards -->
+  <div class="grid md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+      <div class="text-3xl mb-2">🤖</div>
+      <div class="text-sm font-semibold text-blue-900">AI-Powered Analysis</div>
+      <div class="text-xs text-blue-700">Instant tier recommendation</div>
+    </div>
+    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+      <div class="text-3xl mb-2">⚡</div>
+      <div class="text-sm font-semibold text-emerald-900">Fast Review</div>
+      <div class="text-xs text-emerald-700">24-48 hour processing</div>
+    </div>
+    <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center">
+      <div class="text-3xl mb-2">✓</div>
+      <div class="text-sm font-semibold text-purple-900">Verified Partner</div>
+      <div class="text-xs text-purple-700">Get ALLFLEX badge</div>
+    </div>
+  </div>
+
+  {% if messages %}
+    <div class="mb-6 space-y-3">
+      {% for message in messages %}
+        <div class="rounded-xl border px-4 py-3 text-sm
+          {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800
+          {% elif message.tags == 'error' %}border-red-200 bg-red-50 text-red-800
+          {% else %}border-slate-200 bg-slate-50 text-slate-800{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+    {% csrf_token %}
+    
+    <!-- Step 1: Search for Your Gym -->
+    <div class="mb-8">
+      <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <span class="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm">1</span>
+        Search for Your Gym
+      </h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            Search Gym Name <span class="text-red-500">*</span>
+            <span class="text-xs font-normal text-gray-500">(Powered by Gemini AI)</span>
+          </label>
+          <input 
+            type="text" 
+            id="gymSearchInput"
+            placeholder="Type your gym location in India (e.g., 'Gold's Gym Indiranagar, Bangalore')"
+            class="w-full"
+            autocomplete="off"
+          >
+          <p class="mt-1 text-xs text-gray-500">Start typing your gym name and location in India to search</p>
+          
+          <div id="gymSearchResults" class="mt-3 space-y-2 hidden"></div>
+          
+          <div id="selectedGymDisplay" class="mt-4 hidden">
+            <div class="p-4 bg-teal-50 border-2 border-teal-200 rounded-xl">
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="font-semibold text-teal-900" id="selectedGymName"></div>
+                  <div class="text-sm text-teal-700" id="selectedGymAddress"></div>
+                </div>
+                <button type="button" onclick="clearGymSelection()" class="text-red-600 hover:text-red-700 text-sm font-semibold">
+                  Change
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <input type="hidden" name="gym_name" id="gym_name" required>
+        <input type="hidden" name="gym_address" id="gym_address" required>
+      </div>
+    </div>
+
+    <hr class="my-8 border-gray-200">
+
+    <!-- Step 2: Owner Information -->
+    <div class="mb-8">
+      <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <span class="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm">2</span>
+        Owner Information
+      </h2>
+      
+      <div class="grid md:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            Your Full Name <span class="text-red-500">*</span>
+          </label>
+          <input type="text" name="owner_name" required>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            Contact Number <span class="text-red-500">*</span>
+          </label>
+          <input type="text" name="contact_number" placeholder="+91 XXXXXXXXXX" required>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            Email Address <span class="text-red-500">*</span>
+          </label>
+          <input type="email" name="email" placeholder="your@email.com" required>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            Years in Business <span class="text-red-500">*</span>
+          </label>
+          <input type="number" name="years_in_business" min="0" placeholder="e.g., 5" required>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            Total Members <span class="text-red-500">*</span>
+          </label>
+          <input type="number" name="total_members" min="0" placeholder="e.g., 250" required>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-8 border-gray-200">
+
+    <!-- Step 3: Facilities Checklist -->
+    <div class="mb-8">
+      <h2 class="text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
+        <span class="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm">3</span>
+        Facilities Available
+      </h2>
+      <p class="text-sm text-slate-600 mb-4">Select all facilities your gym provides (helps determine tier)</p>
+      
+      <div class="space-y-6">
+        <!-- Basic Facilities (Tier 1) -->
+        <div class="tier-section">
+          <div class="tier-header bg-blue-100 text-blue-800">⬤ BASIC FACILITIES (Tier 1)</div>
+          <div class="grid md:grid-cols-2 gap-3 mt-3">
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_cardio" class="mr-3 w-5 h-5 rounded">
+              <span>💪 Cardio Equipment</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_weights" class="mr-3 w-5 h-5 rounded">
+              <span>🏋️ Free Weights</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_machines" class="mr-3 w-5 h-5 rounded">
+              <span>⚙️ Weight Machines</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Standard Facilities (Tier 2) -->
+        <div class="tier-section">
+          <div class="tier-header bg-emerald-100 text-emerald-800">⬤ STANDARD FACILITIES (Tier 2)</div>
+          <div class="grid md:grid-cols-2 gap-3 mt-3">
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_ac" class="mr-3 w-5 h-5 rounded">
+              <span>❄️ Air Conditioning</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_changing_rooms" class="mr-3 w-5 h-5 rounded">
+              <span>👔 Changing Rooms</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_showers" class="mr-3 w-5 h-5 rounded">
+              <span>🚿 Showers/Washrooms</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_lockers" class="mr-3 w-5 h-5 rounded">
+              <span>🔐 Lockers</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_music" class="mr-3 w-5 h-5 rounded">
+              <span>🎵 Music System</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Premium Facilities (Tier 3) -->
+        <div class="tier-section">
+          <div class="tier-header bg-purple-100 text-purple-800">⬤ PREMIUM FACILITIES (Tier 3)</div>
+          <div class="grid md:grid-cols-2 gap-3 mt-3">
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_trainers" class="mr-3 w-5 h-5 rounded">
+              <span>🎯 Personal Trainers</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_group_classes" class="mr-3 w-5 h-5 rounded">
+              <span>👥 Group Fitness Classes</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_parking" class="mr-3 w-5 h-5 rounded">
+              <span>🅿️ Parking Facility</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_wifi" class="mr-3 w-5 h-5 rounded">
+              <span>📶 WiFi</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Elite Facilities (Tier 4) -->
+        <div class="tier-section">
+          <div class="tier-header bg-amber-100 text-amber-800">⬤ ELITE FACILITIES (Tier 4)</div>
+          <div class="grid md:grid-cols-2 gap-3 mt-3">
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_spa" class="mr-3 w-5 h-5 rounded">
+              <span>♨️ Spa/Sauna/Steam</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_pool" class="mr-3 w-5 h-5 rounded">
+              <span>🏊 Swimming Pool</span>
+            </label>
+            
+            <label class="facility-checkbox">
+              <input type="checkbox" name="has_cafeteria" class="mr-3 w-5 h-5 rounded">
+              <span>☕ Cafeteria/Juice Bar</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-8 border-gray-200">
+
+    <!-- Step 4: Documents & Additional Info -->
+    <div class="mb-8">
+      <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <span class="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm">4</span>
+        Documents & Additional Information
+      </h2>
+      
+      <div class="space-y-5">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            Business Registration Document <span class="text-xs font-normal text-gray-500">(Optional but recommended)</span>
+          </label>
+          <input type="file" name="business_proof" accept=".pdf,.jpg,.jpeg,.png">
+          <p class="mt-1 text-xs text-gray-500">Upload business license, registration certificate, or tax documents</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            Additional Information <span class="text-xs font-normal text-gray-500">(Optional)</span>
+          </label>
+          <textarea name="additional_info" rows="4" placeholder="Any additional details about your gym, special features, achievements, certifications, etc."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="flex flex-col sm:flex-row gap-4 items-center justify-between p-6 bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl border border-teal-200">
+      <div class="text-sm text-slate-700">
+        <div class="font-semibold mb-1">📋 What happens next:</div>
+        <div class="text-xs space-y-1">
+          <div>• AI analyzes your submission instantly</div>
+          <div>• Admin reviews within 24-48 hours</div>
+          <div>• You receive email with decision</div>
+        </div>
+      </div>
+      
+      <div class="flex flex-col sm:flex-row gap-3">
+        <a href="{% url 'user_dashboard' %}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+          Cancel
+        </a>
+        <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-teal-600 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-700">
+          📨 Submit Request
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+let searchTimeout;
+const searchInput = document.getElementById('gymSearchInput');
+const searchResults = document.getElementById('gymSearchResults');
+const selectedDisplay = document.getElementById('selectedGymDisplay');
+const gymNameInput = document.getElementById('gym_name');
+const gymAddressInput = document.getElementById('gym_address');
+
+searchInput.addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const query = this.value.trim();
+  
+  if (query.length < 3) {
+    searchResults.classList.add('hidden');
+    return;
+  }
+  
+  searchTimeout = setTimeout(() => searchGyms(query), 500);
+});
+
+async function searchGyms(query) {
+  searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">🔍 Searching...</div>';
+  searchResults.classList.remove('hidden');
+  
+  try {
+    const response = await fetch(`/gyms/search-gym-name/?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    
+    if (data.gyms && data.gyms.length > 0) {
+      searchResults.innerHTML = data.gyms.map((gym, index) => `
+        <div class="gym-result-item" data-gym-index="${index}" data-gym-name="${escapeHtml(gym.name)}" data-gym-address="${escapeHtml(gym.address || gym.location || '')}">
+          <div class="font-semibold text-gray-900">${escapeHtml(gym.name)}</div>
+          <div class="text-sm text-gray-600">${escapeHtml(gym.address || gym.location || 'Location not specified')}</div>
+        </div>
+      `).join('');
+      
+      // Add click handlers to all gym result items
+      document.querySelectorAll('.gym-result-item').forEach(item => {
+        item.addEventListener('click', function() {
+          const gymName = this.getAttribute('data-gym-name');
+          const gymAddress = this.getAttribute('data-gym-address');
+          selectGym(gymName, gymAddress);
+        });
+      });
+    } else {
+      searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">Type your gym name to search...</div>';
+    }
+  } catch (error) {
+    // Show generic results even on error
+    const fallbackName = query + ' Gym';
+    const fallbackAddress = 'Enter address manually below';
+    searchResults.innerHTML = `
+      <div class="p-4 space-y-2">
+        <div class="text-sm text-gray-600">Search suggestions:</div>
+        <div class="gym-result-item" data-gym-name="${escapeHtml(fallbackName)}" data-gym-address="${escapeHtml(fallbackAddress)}">
+          <div class="font-semibold text-gray-900">${escapeHtml(fallbackName)}</div>
+          <div class="text-sm text-gray-600">Click to select and enter address manually</div>
+        </div>
+      </div>
+    `;
+    
+    // Add click handler
+    document.querySelectorAll('.gym-result-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const gymName = this.getAttribute('data-gym-name');
+        const gymAddress = this.getAttribute('data-gym-address');
+        selectGym(gymName, gymAddress);
+      });
+    });
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function selectGym(name, address) {
+  gymNameInput.value = name;
+  gymAddressInput.value = address;
+  
+  document.getElementById('selectedGymName').textContent = name;
+  document.getElementById('selectedGymAddress').textContent = address;
+  
+  searchInput.value = '';
+  searchResults.classList.add('hidden');
+  selectedDisplay.classList.remove('hidden');
+}
+
+function clearGymSelection() {
+  gymNameInput.value = '';
+  gymAddressInput.value = '';
+  selectedDisplay.classList.add('hidden');
+  searchInput.focus();
+}
+</script>
+{% endblock %}

@@ -10,13 +10,13 @@
 
             <div class="hidden md:flex items-center space-x-6">
                 <a href="{% url 'plans' %}" class="text-slate-700 hover:text-slate-900">Plans</a>
-                <a href="#" class="text-slate-700 hover:text-slate-900">Find Gyms</a>
-                <a href="#" class="text-slate-700 hover:text-slate-900">List Business</a>
+                <a href="{% url 'user_dashboard' %}" class="text-slate-700 hover:text-slate-900">Find Gyms</a>
+                <a href="{% url 'gym_submit' %}" class="text-slate-700 hover:text-slate-900">List Business</a>
             </div>
 
             <div class="hidden md:flex items-center space-x-4">
                 {% if user.is_authenticated %}
-                    <span class="text-sm text-slate-700">{{ user.first_name|default:user.username }}</span>
+                    <a href="{% url 'user_profile' %}" class="text-sm text-slate-700 hover:text-teal-600 font-semibold">{{ user.first_name|default:user.username }}</a>
                     <form method="post" action="{% url 'logout' %}" class="inline">
                         {% csrf_token %}
                         <button type="submit" class="text-sm px-3 py-1 rounded-md border border-slate-200 hover:bg-slate-50">Sign out</button>

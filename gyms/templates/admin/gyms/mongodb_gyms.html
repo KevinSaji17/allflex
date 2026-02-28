@@ -1,0 +1,93 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <h1>Manage Gyms</h1>
+    
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+            <div style="text-align: center;">
+                <div style="font-size: 32px; font-weight: bold; color: #007bff;">{{ total_gyms }}</div>
+                <div style="color: #6c757d;">Total Gyms</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 32px; font-weight: bold; color: #28a745;">{{ approved_gyms }}</div>
+                <div style="color: #6c757d;">Approved</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 32px; font-weight: bold; color: #ffc107;">{{ pending_gyms }}</div>
+                <div style="color: #6c757d;">Pending</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 32px; font-weight: bold; color: #17a2b8;">{{ verified_partners }}</div>
+                <div style="color: #6c757d;">Verified Partners</div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+        <a href="?status=" class="button {% if not status_filter %}button-primary{% endif %}">All</a>
+        <a href="?status=approved" class="button {% if status_filter == 'approved' %}button-primary{% endif %}">Approved</a>
+        <a href="?status=pending" class="button {% if status_filter == 'pending' %}button-primary{% endif %}">Pending</a>
+        <a href="?status=rejected" class="button {% if status_filter == 'rejected' %}button-primary{% endif %}">Rejected</a>
+    </div>
+    
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #f8f9fa;">
+                <th style="padding: 10px; text-align: left;">Name</th>
+                <th style="padding: 10px; text-align: left;">Location</th>
+                <th style="padding: 10px; text-align: center;">Tier</th>
+                <th style="padding: 10px; text-align: center;">Status</th>
+                <th style="padding: 10px; text-align: center;">Active</th>
+                <th style="padding: 10px; text-align: center;">Verified Partner</th>
+                <th style="padding: 10px; text-align: center;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for gym in gyms %}
+            <tr style="border-bottom: 1px solid #dee2e6;">
+                <td style="padding: 10px;">{{ gym.name }}</td>
+                <td style="padding: 10px;">{{ gym.location|truncatewords:10 }}</td>
+                <td style="padding: 10px; text-align: center;">
+                    <span style="background: #17a2b8; color: white; padding: 5px 10px; border-radius: 3px;">Tier {{ gym.tier }}</span>
+                </td>
+                <td style="padding: 10px; text-align: center;">
+                    {% if gym.status == 'approved' %}
+                        <span style="background: #28a745; color: white; padding: 5px 10px; border-radius: 3px;">Approved</span>
+                    {% elif gym.status == 'pending' %}
+                        <span style="background: #ffc107; color: white; padding: 5px 10px; border-radius: 3px;">Pending</span>
+                    {% else %}
+                        <span style="background: #dc3545; color: white; padding: 5px 10px; border-radius: 3px;">Rejected</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 10px; text-align: center;">
+                    {% if gym.is_active %}
+                        <span style="color: #28a745;">✓</span>
+                    {% else %}
+                        <span style="color: #dc3545;">✗</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 10px; text-align: center;">
+                    {% if gym.is_verified_partner %}
+                        <span style="color: #007bff; font-size: 18px;">🔵</span>
+                    {% else %}
+                        <span style="color: #6c757d;">⚪</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 10px; text-align: center;">
+                    <a href="/admin/gyms/mongodb-gyms/{{ gym.id }}/edit/" class="button">Edit</a>
+                    <a href="/admin/gyms/mongodb-gyms/{{ gym.id }}/delete/" class="button" style="background: #dc3545; color: white;" onclick="return confirm('Are you sure you want to delete {{ gym.name }}?');">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="padding: 20px; text-align: center; color: #6c757d;">
+                    No gyms found
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

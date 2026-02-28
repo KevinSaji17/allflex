@@ -16,11 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from gyms.admin_views import mongodb_gyms_view, mongodb_gym_edit, mongodb_gym_delete
 
 urlpatterns = [
+    path('admin/gyms/mongodb-gyms/', mongodb_gyms_view, name='mongodb_gyms_view'),
+    path('admin/gyms/mongodb-gyms/<str:gym_id>/edit/', mongodb_gym_edit, name='mongodb_gym_edit'),
+    path('admin/gyms/mongodb-gyms/<str:gym_id>/delete/', mongodb_gym_delete, name='mongodb_gym_delete'),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('gym-dashboard/', include('gyms.urls')),
+    path('gyms/', include('gyms.urls')),  # Alternative URL prefix
     path('admin-dashboard/', include('adminpanel.urls')),
     path('', include('users.urls')),
 ]
