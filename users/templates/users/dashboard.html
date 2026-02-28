@@ -22,31 +22,33 @@
                         <p class="text-gray-600 text-sm font-semibold">Available Credits</p>
                         <span class="text-3xl">💳</span>
                     </div>
-                    <p class="text-4xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent" id="userCreditsDisplay">{{ user.credits|default:0 }}</p>
+                    <p class="text-4xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent" id="userCreditsDisplay" data-credit-balance>{{ user.credits|default:0 }}</p>
                 </div>
             </div>
             
-            <!-- Tier 1 Visits Card -->
+            <!-- Visits Card -->
             <div class="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all duration-300 overflow-hidden relative">
                 <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div class="relative">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-gray-600 text-sm font-semibold">Tier 1 Visits</p>
+                        <p class="text-gray-600 text-sm font-semibold">Possible Visits</p>
                         <span class="text-3xl">🏋️</span>
                     </div>
                     <p class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent" id="t1Visits">0</p>
+                    <p class="text-xs text-gray-400 mt-1" id="tierVisitsBreakdown">at Tier 1 (5 cr)</p>
                 </div>
             </div>
 
-            <!-- Plan Status Card -->
+            <!-- Workout Streak Card -->
             <div class="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-amber-200 transition-all duration-300 overflow-hidden relative">
                 <div class="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div class="relative">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-gray-600 text-sm font-semibold">Plan Status</p>
-                        <span class="text-3xl">⭐</span>
+                        <p class="text-gray-600 text-sm font-semibold">Workout Streak</p>
+                        <span class="text-3xl">🔥</span>
                     </div>
-                    <p class="text-xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">{{ user.get_plan_display|default:"Free" }}</p>
+                    <p class="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent" data-streak>{{ workout_streak }}</p>
+                    <p class="text-xs text-gray-500 mt-1">consecutive days</p>
                 </div>
             </div>
 
@@ -67,43 +69,64 @@
         <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 mb-12">
             <div class="max-w-2xl mx-auto">
                 <h2 class="text-3xl font-bold text-gray-900 mb-2">🔍 Find Gyms Near You</h2>
-                <p class="text-gray-600 mb-8">Enter a pincode to discover nearby fitness centers and use your credits.</p>
+                <p class="text-gray-600 mb-8">Enter your location to discover nearby fitness centers within 7 km and use your credits.</p>
                 
-                <form id="gymSearchForm" class="flex gap-3 mb-8">
+                <form id="gymSearchForm" action="#" class="flex gap-3 mb-8">
                     {% csrf_token %}
                     <input type="text" 
                            id="pincodeInput" 
                            name="pincode"
-                           placeholder="Enter pincode (e.g., 400001)" 
+                           placeholder="Enter location in India (e.g., Indiranagar Bangalore, Gateway of India Mumbai)" 
                            class="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                     <button type="submit" 
                             id="findGymsBtn"
-                            class="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
+                            class="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 whitespace-nowrap">
                         Search
                     </button>
                 </form>
                 
+                <!-- Location examples hint -->
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;font-size:14px;">
+                    <span style="color:#6b7280;">Try:</span>
+                    <button type="button" class="location-example" onclick="selectLocation(this)" style="padding:4px 12px;background:#f3f4f6;color:#374151;border-radius:20px;border:none;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#f0fdfa';this.style.color='#0f766e';" onmouseout="this.style.background='#f3f4f6';this.style.color='#374151';">Bandra West, Mumbai</button>
+                    <button type="button" class="location-example" onclick="selectLocation(this)" style="padding:4px 12px;background:#f3f4f6;color:#374151;border-radius:20px;border:none;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#f0fdfa';this.style.color='#0f766e';" onmouseout="this.style.background='#f3f4f6';this.style.color='#374151';">Connaught Place, Delhi</button>
+                    <button type="button" class="location-example" onclick="selectLocation(this)" style="padding:4px 12px;background:#f3f4f6;color:#374151;border-radius:20px;border:none;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#f0fdfa';this.style.color='#0f766e';" onmouseout="this.style.background='#f3f4f6';this.style.color='#374151';">Indiranagar, Bangalore</button>
+                    <button type="button" class="location-example" onclick="selectLocation(this)" style="padding:4px 12px;background:#f3f4f6;color:#374151;border-radius:20px;border:none;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#f0fdfa';this.style.color='#0f766e';" onmouseout="this.style.background='#f3f4f6';this.style.color='#374151';">Saket, Delhi</button>
+                </div>
+                
                 <!-- Loading indicator -->
-                <div id="loadingIndicator" class="hidden text-center py-8">
+                <div id="loadingIndicator" style="display:none;" class="text-center py-8">
                     <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-t-teal-600 border-gray-200"></div>
-                    <p class="mt-3 text-gray-600">⏳ Finding gyms near you...</p>
+                    <p id="loadingMessage" class="mt-3 text-gray-600"></p>
                 </div>
                 
                 <!-- Error message -->
-                <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                <div id="errorMessage" style="display:none;" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
                     <!-- Error message will be inserted here -->
                 </div>
 
                 <!-- Success message -->
-                <div id="successMessage" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
+                <div id="successMessage" style="display:none;" class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
                     <!-- Success message will be inserted here -->
                 </div>
                 
                 <!-- Results container -->
-                <div id="gymResults" class="hidden">
+                <div id="gymResults" style="display:none;">
                     <h3 class="text-xl font-bold text-gray-900 mb-6">✅ Available Gyms</h3>
-                    <div id="gymList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div id="gymList" class="flex flex-col gap-4">
                         <!-- Gym cards will be inserted here -->
+                    </div>
+                    <!-- Pagination Controls -->
+                    <div id="paginationControls" class="hidden mt-8 flex items-center justify-center gap-2">
+                        <button id="prevPage" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                            ← Previous
+                        </button>
+                        <div id="pageNumbers" class="flex gap-2">
+                            <!-- Page numbers will be inserted here -->
+                        </div>
+                        <button id="nextPage" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                            Next →
+                        </button>
                     </div>
                 </div>
             </div>
@@ -113,13 +136,21 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Bookings Card -->
             <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.3A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z"/></svg>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.3A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900">My Bookings</h3>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-900">Upcoming Bookings</h3>
+                    <a href="{% url 'booking_calendar' %}" class="text-sm font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        View Calendar
+                    </a>
                 </div>
-                <p class="text-gray-600">You have no upcoming bookings.</p>
+                <div id="bookingsList">
+                    <p class="text-gray-500 text-sm">Loading bookings…</p>
+                </div>
             </div>
 
             <!-- Favorites Card -->
@@ -130,9 +161,71 @@
                     </div>
                     <h3 class="text-lg font-bold text-gray-900">Favorite Gyms</h3>
                 </div>
-                <p class="text-gray-600 mb-4">You haven't favorited any gyms yet.</p>
-                <a href="{% url 'plans' %}" class="text-teal-600 hover:text-teal-700 font-medium">Explore Plans & Credits →</a>
+                <div id="favoriteGymsList">
+                    <p class="text-gray-600 mb-4">Your favorite gyms will appear here.</p>
+                </div>
+                <a href="{% url 'user_profile' %}" class="text-teal-600 hover:text-teal-700 font-medium">View All Favorites →</a>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- Booking Modal: Date + Time Slot Selection                              -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="bookingModal" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:9999;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.6);">
+    <div style="background:#fff;border-radius:16px;box-shadow:0 25px 50px rgba(0,0,0,.25);width:100%;max-width:520px;overflow:hidden;">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-4 flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-white">Select Date &amp; Time</h3>
+                <p id="modalGymName" class="text-teal-100 text-sm mt-0.5 font-medium"></p>
+                <p id="modalTierInfo" class="text-teal-100 text-xs mt-1"></p>
+            </div>
+            <button type="button" id="modalCancelBtn" class="text-teal-100 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-5 overflow-y-auto" style="max-height:65vh;">
+            <!-- Hidden inputs -->
+            <input type="hidden" id="modalGymId">
+            <input type="hidden" id="modalGymNameVal">
+            <input type="hidden" id="modalTier">
+            <input type="hidden" id="modalSelectedSlot">
+
+            <!-- Date Picker -->
+            <div class="mb-5">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Choose Visit Date
+                </label>
+                <input type="date" id="modalDatePicker" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-800 font-medium focus:border-teal-500 focus:ring-2 focus:ring-teal-100 focus:outline-none transition-all">
+                <p class="text-xs text-gray-400 mt-1">You can book up to 14 days in advance.</p>
+            </div>
+
+            <!-- Time Slots -->
+            <div class="mb-2">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Choose Time Slot
+                </label>
+                <div id="timeSlotsContainer"></div>
+            </div>
+
+            <!-- Error message -->
+            <p id="bookingModalError" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2 mt-2"></p>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+            <button type="button" id="modalCancelBtn2" class="flex-1 py-3 px-4 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-100 transition-all">
+                Cancel
+            </button>
+            <button type="button" id="modalConfirmBtn" disabled class="flex-2 flex-grow py-3 px-6 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold shadow-lg hover:from-teal-700 hover:to-teal-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                Confirm Booking
+            </button>
         </div>
     </div>
 </div>
@@ -141,191 +234,750 @@
 <script>
 // Tier costs for credits
 const TIER_COSTS = {1: 5, 2: 9, 3: 13, 4: 18};
+const TIER_LABELS = {1: 'Basic', 2: 'Standard', 3: 'Premium', 4: 'Elite'};
+const TIER_COLORS = {
+    1: {bg:'#f3f4f6', text:'#374151', border:'#d1d5db'},
+    2: {bg:'#eff6ff', text:'#1d4ed8', border:'#93c5fd'},
+    3: {bg:'#f5f3ff', text:'#7c3aed', border:'#c4b5fd'},
+    4: {bg:'#fffbeb', text:'#b45309', border:'#fcd34d'}
+};
 
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('gymSearchForm');
-    const pincodeInput = document.getElementById('pincodeInput');
+// Favorite gym IDs and names from backend
+const FAVORITE_GYM_IDS = {{ favorite_gym_ids|safe }};
+const FAVORITE_GYM_NAMES = {{ favorite_gym_names|safe }};
+let favoriteGymNamesArray = [];
+try {
+    favoriteGymNamesArray = Array.isArray(FAVORITE_GYM_NAMES) ? FAVORITE_GYM_NAMES : [];
+} catch(e) {
+    favoriteGymNamesArray = [];
+}
+
+// Pagination settings
+const GYMS_PER_PAGE = 10;
+let allGyms = {};
+let currentPage = 1;
+let totalPages = 1;
+
+// Fun loading messages
+const LOADING_MESSAGES = [
+    '💪 Finding the best gains near you...',
+    '🏋️ Scanning for sweat sanctuaries...',
+    '🔍 Hunting down your next workout spot...',
+    '⚡ Locating fitness havens in your area...',
+    '🎯 Zeroing in on your perfect gym match...',
+    '🚀 Launching gym search mission...',
+    '🗺️ Mapping out nearby fitness zones...',
+    '💯 Finding gyms that match your vibe...',
+    '🏃 Sprinting through gym databases...',
+    '🌟 Discovering hidden fitness gems nearby...'
+];
+let lastLoadingMessage = -1;
+
+function getRandomLoadingMessage() {
+    let newIndex;
+    do {
+        newIndex = Math.floor(Math.random() * LOADING_MESSAGES.length);
+    } while (newIndex === lastLoadingMessage && LOADING_MESSAGES.length > 1);
+    lastLoadingMessage = newIndex;
+    return LOADING_MESSAGES[newIndex];
+}
+
+// ─── Global Gym Search Function ────────────────────────────────────────────
+async function performGymSearch(location) {
+    const pincode = (location || '').trim();
     const loadingIndicator = document.getElementById('loadingIndicator');
-    const gymResults = document.getElementById('gymResults');
-    const errorMessage = document.getElementById('errorMessage');
-    const findGymsBtn = document.getElementById('findGymsBtn');
-    
-    // Update tier visits on page load
-    updateTierVisits();
-    
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const pincode = pincodeInput.value.trim();
-        
-        if (!pincode) {
-            showError('Please enter a pincode');
-            return;
-        }
-        
-        // Reset messages
-        gymResults.classList.add('hidden');
-        errorMessage.classList.add('hidden');
-        
-        // Show loading
-        loadingIndicator.classList.remove('hidden');
+    const gymResults        = document.getElementById('gymResults');
+    const errorMessage      = document.getElementById('errorMessage');
+    const findGymsBtn       = document.getElementById('findGymsBtn');
+    const pincodeInput      = document.getElementById('pincodeInput');
+
+    if (!pincode) {
+        errorMessage.textContent = '✕ Please enter a location (address, area, landmark, or pincode)';
+        errorMessage.style.display = 'block';
+        return;
+    }
+
+    // Sync input box with the value being searched
+    if (pincodeInput) pincodeInput.value = pincode;
+
+    // Reset state
+    gymResults.style.display        = 'none';
+    errorMessage.style.display      = 'none';
+
+    // Show loading
+    document.getElementById('loadingMessage').textContent = getRandomLoadingMessage();
+    loadingIndicator.style.display = 'block';
+    if (findGymsBtn) {
         findGymsBtn.disabled = true;
-        findGymsBtn.innerHTML = '<svg class="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/></svg>';
-        
-        try {
-            const response = await fetch('{% url "find_gyms_by_pincode" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify({ pincode: pincode })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.error) {
-                showError(data.error);
+        findGymsBtn.innerHTML = '<svg class="animate-spin h-5 w-5 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/></svg> Searching…';
+    }
+
+    try {
+        const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        const csrf   = csrfEl ? csrfEl.value : '';
+
+        const response = await fetch('{% url "find_gyms_by_pincode" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf,
+            },
+            body: JSON.stringify({ pincode: pincode }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            if (data.error === 'rate_limit' && data.gyms) {
+                // Rate-limited but we got fallback gyms
+                errorMessage.style.cssText = 'display:block;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;padding:12px 16px;border-radius:8px;margin-bottom:16px;';
+                errorMessage.textContent = data.message || 'Showing nearby gyms (cached results).';
+                displayGyms(data.gyms);
             } else {
-                displayGyms(data);
+                errorMessage.style.cssText = 'display:block;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:12px 16px;border-radius:8px;margin-bottom:16px;';
+                errorMessage.textContent = '✕ ' + data.error;
+                errorMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
-            
-        } catch (error) {
-            showError('Failed to find gyms. Please try again.');
-            console.error('Error:', error);
-        } finally {
-            loadingIndicator.classList.add('hidden');
+        } else {
+            displayGyms(data);
+        }
+
+    } catch (err) {
+        console.error('[GymSearch] Error:', err);
+        errorMessage.style.cssText = 'display:block;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:12px 16px;border-radius:8px;margin-bottom:16px;';
+        errorMessage.textContent = '✕ Failed to find gyms. Please check your connection and try again.';
+    } finally {
+        loadingIndicator.style.display = 'none';
+        if (findGymsBtn) {
             findGymsBtn.disabled = false;
             findGymsBtn.textContent = 'Search';
         }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial UI state
+    updateTierVisits();
+
+    // Pagination buttons
+    document.getElementById('prevPage').addEventListener('click', prevPage);
+    document.getElementById('nextPage').addEventListener('click', nextPage);
+
+    // Gym search form — delegates to global performGymSearch()
+    document.getElementById('gymSearchForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        performGymSearch((document.getElementById('pincodeInput').value || '').trim());
     });
-    
-    function displayGyms(gyms) {
-        const gymList = document.getElementById('gymList');
-        gymList.innerHTML = '';
-        
-        if (!gyms || Object.keys(gyms).length === 0) {
-            gymList.innerHTML = '<p class="text-gray-500 text-center col-span-2 py-8">No gyms found in this area. Try another pincode.</p>';
+
+    // Favorite button event delegation (buttons are created dynamically)
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.favorite-btn');
+        if (btn) toggleFavorite(btn.dataset.gymId, btn.dataset.gymName, btn);
+    });
+
+    loadBookings();
+    refreshDashboardStats();
+}); // end DOMContentLoaded #1
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GLOBAL FUNCTIONS — all callable from anywhere (inline handlers, globals, etc.)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function displayGyms(gyms) {
+    allGyms = gyms;
+    currentPage = 1;
+
+    const gymList          = document.getElementById('gymList');
+    const gymResults       = document.getElementById('gymResults');
+    const paginationControls = document.getElementById('paginationControls');
+    gymList.innerHTML = '';
+
+    if (!gyms || Object.keys(gyms).length === 0) {
+        gymList.innerHTML = '<p class="text-gray-500 text-center py-8">No gyms found within 7 km. Try another location.</p>';
+        paginationControls.classList.add('hidden');
+    } else {
+        const gymEntries = Object.entries(gyms);
+        totalPages = Math.ceil(gymEntries.length / GYMS_PER_PAGE);
+
+        if (gymEntries.length > GYMS_PER_PAGE) {
+            paginationControls.classList.remove('hidden');
         } else {
-            Object.entries(gyms).forEach(([gymName, gymInfo]) => {
-                const gymCard = createGymCard(gymName, gymInfo);
-                gymList.appendChild(gymCard);
-            });
-            
-            // Attach event listeners to use-visit buttons
-            document.querySelectorAll('.use-visit-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const gymName = this.getAttribute('data-gym-name');
-                    const tier = parseInt(this.getAttribute('data-tier'));
-                    useVisit(gymName, tier, this);
-                });
-            });
+            paginationControls.classList.add('hidden');
         }
-        
-        gymResults.classList.remove('hidden');
+        renderPage();
+    }
+    gymResults.style.display = 'block';
+}
+
+function renderPage() {
+    const gymList    = document.getElementById('gymList');
+    gymList.innerHTML = '';
+
+    const gymEntries     = Object.entries(allGyms);
+    const startIdx       = (currentPage - 1) * GYMS_PER_PAGE;
+    const endIdx         = Math.min(startIdx + GYMS_PER_PAGE, gymEntries.length);
+    const currentPageGyms = gymEntries.slice(startIdx, endIdx);
+
+    currentPageGyms.forEach(([gymName, gymInfo]) => {
+        gymList.appendChild(createGymCard(gymName, gymInfo));
+    });
+
+    initializeFavoriteButtons();
+    updatePaginationControls();
+    document.getElementById('gymResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updatePaginationControls() {
+    const prevBtn    = document.getElementById('prevPage');
+    const nextBtn    = document.getElementById('nextPage');
+    const pageNumbers = document.getElementById('pageNumbers');
+
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+
+    pageNumbers.innerHTML = '';
+    for (let i = 1; i <= totalPages; i++) {
+        const pageBtn    = document.createElement('button');
+        pageBtn.textContent = i;
+        pageBtn.className   = currentPage === i
+            ? 'px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg'
+            : 'px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-all';
+        pageBtn.addEventListener('click', () => goToPage(i));
+        pageNumbers.appendChild(pageBtn);
+    }
+}
+
+function goToPage(pageNum) {
+    if (pageNum >= 1 && pageNum <= totalPages) {
+        currentPage = pageNum;
+        renderPage();
+    }
+}
+
+function nextPage() {
+    if (currentPage < totalPages) { currentPage++; renderPage(); }
+}
+
+function prevPage() {
+    if (currentPage > 1) { currentPage--; renderPage(); }
+}
+
+function createGymCard(gymName, gymInfo) {
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-2xl border-2 border-gray-100 hover:border-teal-300 hover:shadow-2xl transition-all duration-300';
+
+    let distance = 'N/A', rating = 'N/A', location = '';
+    let hasAc = false, hasDressingRoom = false, hasWashroom = false, hasMusic = false;
+    let gymId = '', isVerified = false;
+
+    if (typeof gymInfo === 'string') {
+        distance = gymInfo;
+    } else if (typeof gymInfo === 'object' && gymInfo) {
+        distance       = gymInfo.distance  || 'N/A';
+        rating         = gymInfo.rating    || 'N/A';
+        location       = gymInfo.location  || '';
+        hasAc          = gymInfo.has_ac    || false;
+        hasDressingRoom = gymInfo.has_dressing_room || false;
+        hasWashroom    = gymInfo.has_washroom || false;
+        hasMusic       = gymInfo.has_music || false;
+        gymId          = gymInfo.id || gymInfo._id || '';
+        isVerified     = gymInfo.is_verified_partner || false;
     }
 
-    function createGymCard(gymName, gymInfo) {
-        const card = document.createElement('div');
-        card.className = 'bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow';
-        
-        let distance = 'N/A';
-        let rating = 'N/A';
-        
-        if (typeof gymInfo === 'string') {
-            distance = gymInfo;
-        } else if (typeof gymInfo === 'object') {
-            distance = gymInfo.distance || 'N/A';
-            rating = gymInfo.rating || 'N/A';
-        }
-        
-        const tier = 1; // MVP: default to Tier 1
-        const cost = TIER_COSTS[tier] || 5;
-        
-        card.innerHTML = `
-            <h4 class="font-bold text-gray-900 text-lg mb-3">${gymName}</h4>
-            <div class="flex gap-4 text-sm text-gray-600 mb-4">
-                <span class="flex items-center gap-1">
+    const tier = (typeof gymInfo === 'object' && gymInfo && gymInfo.tier) ? Math.max(1, Math.min(4, parseInt(gymInfo.tier) || 1)) : 1;
+    const cost = TIER_COSTS[tier] || 5;
+    const tierLabel = TIER_LABELS[tier] || 'Basic';
+    const tierColor = TIER_COLORS[tier] || TIER_COLORS[1];
+
+    const amenityIcon = (hasAmenity, label, iconEmoji) => hasAmenity ? `
+        <div class="bg-white border-2 border-green-500 rounded-full w-8 h-8 flex items-center justify-center text-sm shadow-sm hover:scale-110 transition-transform" title="${label}">
+            <span>${iconEmoji}</span>
+        </div>` : '';
+
+    card.innerHTML = `
+        <div class="p-6">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex-1 pr-4">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h4 class="font-bold text-gray-900 text-2xl">${gymName}</h4>
+                        ${isVerified ? '<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 border-2 border-dashed border-blue-400 shadow-sm" title="ALLFLEX Verified Partner"><svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></span>' : ''}
+                        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:${tierColor.bg};color:${tierColor.text};border:1.5px solid ${tierColor.border};letter-spacing:.03em;">Tier ${tier} · ${tierLabel}</span>
+                    </div>
+                </div>
+                <div class="flex gap-2 items-center flex-shrink-0">
+                    <button type="button"
+                            class="favorite-btn w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                            data-gym-id="${gymId}"
+                            data-gym-name="${gymName.replace(/"/g, '&quot;')}"
+                            title="Add to favorites">
+                        <svg class="w-6 h-6 favorite-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </button>
+                    <div class="flex gap-1.5">
+                        ${amenityIcon(hasAc, 'Air Conditioning', '❄️')}
+                        ${amenityIcon(hasDressingRoom, 'Dressing Room', '👔')}
+                        ${amenityIcon(hasWashroom, 'Washroom', '🚿')}
+                        ${amenityIcon(hasMusic, 'Music System', '🎵')}
+                    </div>
+                </div>
+            </div>
+            ${location ? `<p class="text-base text-gray-500 mb-3 flex items-center gap-2"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>${location}</p>` : ''}
+            <div class="flex gap-4 text-sm mb-6">
+                <span class="flex items-center gap-2 bg-blue-50 text-blue-700 font-semibold px-3 py-1.5 rounded-lg">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
                     ${distance}
                 </span>
-                <span class="flex items-center gap-1">
-                    <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                <span class="flex items-center gap-2 bg-amber-50 text-amber-700 font-semibold px-3 py-1.5 rounded-lg">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                     ${rating}
                 </span>
             </div>
-            <button type="button" class="use-visit-btn w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-                    data-gym-name="${gymName.replace(/"/g, '&quot;')}" 
+            <button type="button" class="book-gym-btn w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-gym-id="${gymId}"
+                    data-gym-name="${gymName.replace(/"/g, '&quot;')}"
                     data-tier="${tier}">
-                Use 1 Visit (${cost} credits)
+                <span class="flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Book Slot &nbsp;·&nbsp; <strong>${cost} credits</strong> &nbsp;<span style="font-size:12px;opacity:.85;">(${tierLabel})</span>
+                </span>
             </button>
-        `;
-        
-        return card;
+        </div>
+    `;
+    return card;
+}
+
+function showError(message) {
+    const el = document.getElementById('errorMessage');
+    el.style.cssText = 'display:block;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:12px 16px;border-radius:8px;margin-bottom:16px;';
+    el.textContent = '✕ ' + message;
+}
+
+function showWarning(message) {
+    const el = document.getElementById('errorMessage');
+    el.style.cssText = 'display:block;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;padding:12px 16px;border-radius:8px;margin-bottom:16px;';
+    el.textContent = message;
+}
+
+function updateTierVisits() {
+    const credits = parseInt(document.getElementById('userCreditsDisplay').textContent) || 0;
+    // Find which tier gives the most realistic visit count (show Tier 1 visits by default)
+    const t1 = Math.floor(credits / TIER_COSTS[1]);
+    const t4 = Math.floor(credits / TIER_COSTS[4]);
+    document.getElementById('t1Visits').textContent = t1;
+    // Show breakdown: e.g. "T1:10 / T4:2"
+    const breakdown = document.getElementById('tierVisitsBreakdown');
+    if (breakdown) {
+        breakdown.textContent = `T1: ${t1} visit${t1!==1?'s':''} · T4: ${t4} visit${t4!==1?'s':''}`;
     }
+}
 
-    async function useVisit(gymName, tier, buttonEl) {
-        const cost = TIER_COSTS[tier] || 5;
-        const errorMessage = document.getElementById('errorMessage');
-        const successMessage = document.getElementById('successMessage');
-        const creditsDisplay = document.getElementById('userCreditsDisplay');
-        
-        errorMessage.classList.add('hidden');
-        successMessage.classList.add('hidden');
+function initializeFavoriteButtons() {
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+        const gymId = btn.dataset.gymId;
+        const gymName = btn.dataset.gymName || '';
+        const isFavorited = isGymFavorited(gymId, gymName);
+        updateFavoriteButtonState(btn, isFavorited);
+    });
+}
 
-        buttonEl.disabled = true;
-        buttonEl.textContent = 'Processing...';
-        
-        try {
-            const response = await fetch('{% url "use_visit" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify({ gym_name: gymName, tier: tier })
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                showError(data.error || 'Failed to use visit.');
-                buttonEl.disabled = false;
-                buttonEl.textContent = `Use 1 Visit (${cost} credits)`;
-                return;
+function normalizeGymName(name) {
+    // Normalize gym name for comparison: lowercase, remove extra spaces/punctuation
+    if (!name) return '';
+    return name.toLowerCase()
+        .replace(/[()]/g, '')  // Remove parentheses
+        .replace(/\s+/g, ' ')  // Normalize whitespace
+        .trim();
+}
+
+function isGymFavorited(gymId, gymName) {
+    // Check by gym ID first
+    if (gymId && (FAVORITE_GYM_IDS.includes(gymId) || FAVORITE_GYM_IDS.includes(parseInt(gymId)))) {
+        return true;
+    }
+    // Check by gym name (normalized comparison)
+    if (gymName) {
+        const normalizedName = normalizeGymName(gymName);
+        for (const favName of favoriteGymNamesArray) {
+            const normalizedFav = normalizeGymName(favName);
+            // Check if names match (either exact or one contains the other for variations)
+            if (normalizedFav === normalizedName || 
+                normalizedFav.includes(normalizedName) || 
+                normalizedName.includes(normalizedFav)) {
+                return true;
             }
-            
-            creditsDisplay.textContent = data.new_balance;
-            updateTierVisits();
-            successMessage.textContent = `✓ Successfully used 1 visit at ${gymName}. ${cost} credits deducted. Balance: ${data.new_balance}`;
-            successMessage.classList.remove('hidden');
-            buttonEl.textContent = '✓ Used';
-            buttonEl.disabled = true;
-            
-        } catch (err) {
-            showError('Request failed. Please try again.');
-            buttonEl.disabled = false;
-            buttonEl.textContent = `Use 1 Visit (${cost} credits)`;
-            console.error('Error:', err);
         }
     }
-    
-    function showError(message) {
-        const errorMessage = document.getElementById('errorMessage');
-        errorMessage.textContent = '✕ ' + message;
-        errorMessage.classList.remove('hidden');
-    }
+    return false;
+}
 
-    function updateTierVisits() {
-        const creditsStr = document.getElementById('userCreditsDisplay').textContent;
-        const credits = parseInt(creditsStr) || 0;
-        
-        document.getElementById('t1Visits').textContent = Math.floor(credits / TIER_COSTS[1]);
+async function toggleFavorite(gymId, gymName, buttonEl) {
+    try {
+        const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        const payload = { gym_name: gymName };
+        if (gymId && gymId !== '' && gymId !== 'undefined') {
+            payload.gym_id = gymId;
+        }
+        const response = await fetch('{% url "toggle_favorite_gym" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfEl ? csrfEl.value : '',
+            },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (data.success) {
+            updateFavoriteButtonState(buttonEl, data.favorited);
+            if (data.favorited) {
+                // Add to favorites
+                if (gymId && !FAVORITE_GYM_IDS.includes(gymId) && !FAVORITE_GYM_IDS.includes(parseInt(gymId))) {
+                    FAVORITE_GYM_IDS.push(gymId);
+                }
+                if (gymName) {
+                    const normalizedName = normalizeGymName(gymName);
+                    const alreadyExists = favoriteGymNamesArray.some(fav => 
+                        normalizeGymName(fav) === normalizedName
+                    );
+                    if (!alreadyExists) {
+                        favoriteGymNamesArray.push(gymName.toLowerCase());
+                    }
+                }
+            } else {
+                // Remove from favorites
+                const i = FAVORITE_GYM_IDS.indexOf(gymId);
+                if (i > -1) FAVORITE_GYM_IDS.splice(i, 1);
+                const j = FAVORITE_GYM_IDS.indexOf(parseInt(gymId));
+                if (j > -1) FAVORITE_GYM_IDS.splice(j, 1);
+                
+                // Remove matching gym names (normalized comparison)
+                if (gymName) {
+                    const normalizedName = normalizeGymName(gymName);
+                    favoriteGymNamesArray = favoriteGymNamesArray.filter(fav => {
+                        const normalizedFav = normalizeGymName(fav);
+                        return normalizedFav !== normalizedName && 
+                               !normalizedFav.includes(normalizedName) && 
+                               !normalizedName.includes(normalizedFav);
+                    });
+                }
+            }
+            const successMsg = document.getElementById('successMessage');
+            successMsg.textContent = data.favorited
+                ? `❤️ Added ${gymName} to favorites!`
+                : `💔 Removed ${gymName} from favorites`;
+            successMsg.style.display = 'block';
+            setTimeout(() => { successMsg.style.display = 'none'; }, 3000);
+        } else {
+            showError(data.error || 'Failed to update favorite');
+        }
+    } catch (err) {
+        console.error('Error toggling favorite:', err);
+        showError('Failed to update favorite. Please try again.');
     }
+}
+
+function updateFavoriteButtonState(button, isFavorited) {
+    const icon = button.querySelector('.favorite-icon');
+    if (!icon) return;
+    if (isFavorited) {
+        button.classList.add('bg-red-50');
+        button.classList.remove('bg-gray-50');
+        icon.setAttribute('fill', 'currentColor');
+        icon.classList.add('text-red-600');
+        icon.classList.remove('text-gray-400');
+        button.title = 'Remove from favorites';
+    } else {
+        button.classList.remove('bg-red-50');
+        button.classList.add('bg-gray-50');
+        icon.setAttribute('fill', 'none');
+        icon.classList.remove('text-red-600');
+        icon.classList.add('text-gray-400');
+        button.title = 'Add to favorites';
+    }
+}
+
+
+async function loadBookings() {
+        const container = document.getElementById('bookingsList');
+        try {
+            const resp = await fetch('{% url "get_user_bookings" %}');
+            const data = await resp.json();
+            if (!data.bookings || data.bookings.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm">No bookings yet. Book your first gym session above! 💪</p>';
+                return;
+            }
+            const statusColors = {
+                booked:     'bg-blue-100 text-blue-700',
+                cancelled:  'bg-red-100 text-red-700',
+                checked_in: 'bg-green-100 text-green-700',
+                completed:  'bg-gray-100 text-gray-600',
+            };
+            // Show latest 5 on dashboard, link to full calendar
+            const preview = data.bookings.slice(0, 5);
+            container.innerHTML = preview.map(b => `
+                <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0" id="booking-row-${b.id}">
+                    <div class="min-w-0 flex-1">
+                        <p class="font-semibold text-gray-800 text-sm truncate">${b.gym_name}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${b.booking_date_display}${b.time_slot && b.time_slot !== '—' ? ' &nbsp;·&nbsp; ' + b.time_slot : ''}</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                        <span class="text-xs font-semibold text-red-500">−${b.credits_charged}cr</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${statusColors[b.status] || 'bg-gray-100 text-gray-600'}">${b.status}</span>
+                        ${b.status === 'booked' ? `<button onclick="cancelBooking('${b.id}')" class="text-xs px-2 py-0.5 rounded bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors font-semibold">Cancel</button>` : ''}
+                    </div>
+                </div>
+            `).join('') + (data.bookings.length > 5 ? `<a href="{% url 'booking_calendar' %}" class="block text-center mt-3 text-sm text-teal-600 hover:text-teal-700 font-semibold">View all ${data.bookings.length} bookings →</a>` : '');
+        } catch (e) {
+            container.innerHTML = '<p class="text-gray-500 text-sm">Could not load bookings.</p>';
+        }
+}
+
+async function refreshDashboardStats() {
+        try {
+            const resp = await fetch('{% url "get_dashboard_stats" %}');
+            const stats = await resp.json();
+            if (stats.error) return;
+            document.querySelectorAll('[data-credit-balance]').forEach(el => {
+                el.textContent = stats.current_credits;
+            });
+            document.querySelectorAll('[data-streak]').forEach(el => {
+                el.textContent = stats.streak;
+            });
+            document.querySelectorAll('[data-total-bookings]').forEach(el => {
+                el.textContent = stats.total_bookings;
+            });
+            document.querySelectorAll('[data-monthly-bookings]').forEach(el => {
+                el.textContent = stats.monthly_bookings;
+            });
+        } catch (e) {
+            // silently ignore stat refresh errors
+        }
+}
+
+// ═════════════════════════════════════════════════════════════════
+// GLOBAL BOOKING MODAL – defined outside DOMContentLoaded for reliable access
+// ═════════════════════════════════════════════════════════════════
+var _pendingBookBtn = null;
+
+// Global function for location example chip selection
+function selectLocation(button) {
+    var locationText = button.textContent.trim();
+    // Call global search directly — avoids browser quirks with .click() on submit buttons
+    performGymSearch(locationText);
+}
+
+async function cancelBooking(bookingId) {
+    if (!confirm('Cancel this booking and get your credits refunded?')) return;
+    const btn = document.querySelector(`#booking-row-${bookingId} button`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Cancelling…'; }
+    try {
+        const resp = await fetch(`/cancel-booking/${bookingId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
+                'Content-Type': 'application/json',
+            },
+        });
+        const data = await resp.json();
+        if (data.success) {
+            // Refresh the bookings list and stats (both are now proper global functions)
+            loadBookings();
+            refreshDashboardStats();
+            // Show brief success toast
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10b981;color:#fff;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);';
+            toast.textContent = data.message || 'Booking cancelled. Credits refunded.';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        } else {
+            alert(data.error || 'Could not cancel booking. Please try again.');
+            if (btn) { btn.disabled = false; btn.textContent = 'Cancel'; }
+        }
+    } catch (e) {
+        alert('Network error. Please try again.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Cancel'; }
+    }
+}
+
+var TIME_SLOTS = [
+    { label: '🌅 Early Morning', slots: ['06:00 AM – 07:00 AM', '07:00 AM – 08:00 AM', '08:00 AM – 09:00 AM'] },
+    { label: '☀️ Morning',        slots: ['09:00 AM – 10:00 AM', '10:00 AM – 11:00 AM', '11:00 AM – 12:00 PM'] },
+    { label: '🌤️ Afternoon',      slots: ['12:00 PM – 01:00 PM', '01:00 PM – 02:00 PM', '02:00 PM – 03:00 PM', '03:00 PM – 04:00 PM'] },
+    { label: '🌆 Evening',        slots: ['05:00 PM – 06:00 PM', '06:00 PM – 07:00 PM', '07:00 PM – 08:00 PM', '08:00 PM – 09:00 PM'] },
+];
+
+function openBookingModal(gymId, gymName, tier, buttonEl) {
+    _pendingBookBtn = buttonEl;
+    document.getElementById('modalGymName').textContent = gymName;
+    document.getElementById('modalGymId').value = gymId;
+    document.getElementById('modalGymNameVal').value = gymName;
+    document.getElementById('modalTier').value = tier;
+    document.getElementById('modalSelectedSlot').value = '';
+    document.getElementById('modalConfirmBtn').disabled = true;
+    document.getElementById('bookingModalError').classList.add('hidden');
+
+    // Show tier + cost info in modal header
+    var cost = TIER_COSTS[tier] || 5;
+    var label = TIER_LABELS[tier] || 'Basic';
+    var tierInfoEl = document.getElementById('modalTierInfo');
+    if (tierInfoEl) tierInfoEl.textContent = 'Tier ' + tier + ' · ' + label + ' · ' + cost + ' credits will be deducted';
+
+    // Update confirm button label
+    var confirmBtn = document.getElementById('modalConfirmBtn');
+    confirmBtn.textContent = 'Confirm & Pay ' + cost + ' Credits';
+
+    var today = new Date();
+    var todayStr = today.toISOString().split('T')[0];
+    var maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + 14);
+    var dp = document.getElementById('modalDatePicker');
+    dp.min = todayStr; dp.max = maxDate.toISOString().split('T')[0]; dp.value = todayStr;
+
+    renderTimeSlots();
+
+    var modal = document.getElementById('bookingModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function renderTimeSlots() {
+    var container = document.getElementById('timeSlotsContainer');
+    container.innerHTML = '';
+    TIME_SLOTS.forEach(function(group) {
+        var groupEl = document.createElement('div');
+        groupEl.innerHTML = '<p style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">' + group.label + '</p>';
+        var btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;';
+        group.slots.forEach(function(slot) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = slot;
+            btn.className = 'ts-btn';
+            btn.style.cssText = 'font-size:13px;padding:6px 12px;border-radius:8px;border:2px solid #e5e7eb;color:#374151;background:#fff;cursor:pointer;transition:all .15s;';
+            btn.onmouseover = function() { if (!btn.dataset.selected) { btn.style.borderColor='#0d9488'; btn.style.color='#0f766e'; btn.style.background='#f0fdfa'; } };
+            btn.onmouseout  = function() { if (!btn.dataset.selected) { btn.style.borderColor='#e5e7eb'; btn.style.color='#374151'; btn.style.background='#fff'; } };
+            btn.addEventListener('click', function() { selectTimeSlot(slot, btn); });
+            btnRow.appendChild(btn);
+        });
+        groupEl.appendChild(btnRow);
+        container.appendChild(groupEl);
+    });
+}
+
+function selectTimeSlot(slot, btnEl) {
+    document.querySelectorAll('.ts-btn').forEach(function(b) {
+        b.dataset.selected = '';
+        b.style.borderColor = '#e5e7eb';
+        b.style.color = '#374151';
+        b.style.background = '#fff';
+        b.style.fontWeight = 'normal';
+    });
+    btnEl.dataset.selected = '1';
+    btnEl.style.borderColor = '#0d9488';
+    btnEl.style.background = '#0d9488';
+    btnEl.style.color = '#fff';
+    btnEl.style.fontWeight = '700';
+    document.getElementById('modalSelectedSlot').value = slot;
+    document.getElementById('modalConfirmBtn').disabled = false;
+}
+
+function closeBookingModal() {
+    var modal = document.getElementById('bookingModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    _pendingBookBtn = null;
+}
+
+// Event delegation – catches clicks on dynamically created book buttons
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.book-gym-btn');
+    if (btn && !btn.disabled) {
+        openBookingModal(
+            btn.getAttribute('data-gym-id'),
+            btn.getAttribute('data-gym-name'),
+            parseInt(btn.getAttribute('data-tier')),
+            btn
+        );
+    }
+});
+
+// Set up modal button listeners once DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('modalCancelBtn').addEventListener('click', closeBookingModal);
+    document.getElementById('modalCancelBtn2').addEventListener('click', closeBookingModal);
+    document.getElementById('bookingModal').addEventListener('click', function(e) {
+        if (e.target === this) closeBookingModal();
+    });
+    document.getElementById('modalConfirmBtn').addEventListener('click', async function() {
+        var gymId   = document.getElementById('modalGymId').value;
+        var gymName = document.getElementById('modalGymNameVal').value;
+        var tier    = parseInt(document.getElementById('modalTier').value);
+        var date    = document.getElementById('modalDatePicker').value;
+        var slot    = document.getElementById('modalSelectedSlot').value;
+        var errEl   = document.getElementById('bookingModalError');
+        errEl.classList.add('hidden');
+
+        if (!date) { errEl.textContent = 'Please select a date.'; errEl.classList.remove('hidden'); return; }
+        if (!slot) { errEl.textContent = 'Please select a time slot.'; errEl.classList.remove('hidden'); return; }
+
+        this.disabled = true;
+        this.textContent = 'Confirming…';
+
+        try {
+            var response = await fetch('{% url "create_booking" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: JSON.stringify({ gym_id: gymId, gym_name: gymName, tier: tier, booking_date: date, time_slot: slot })
+            });
+            var data = await response.json();
+
+            if (!response.ok || !data.success) {
+                errEl.textContent = data.error || 'Booking failed. Please try again.';
+                errEl.classList.remove('hidden');
+                this.disabled = false;
+                var _t = parseInt(document.getElementById('modalTier').value) || 1;
+                this.textContent = 'Confirm & Pay ' + (TIER_COSTS[_t] || 5) + ' Credits';
+                return;
+            }
+
+            closeBookingModal();
+            document.getElementById('userCreditsDisplay').textContent = data.new_balance;
+            updateTierVisits();
+            loadBookings();
+            refreshDashboardStats();
+
+            var successMessage = document.getElementById('successMessage');
+            successMessage.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <svg class="w-6 h-6 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    <div>
+                        <p class="font-bold text-green-800">🎉 Booking Confirmed!</p>
+                        <p class="text-green-700 mt-1">✓ <strong>${data.gym_name}</strong></p>
+                        <p class="text-green-700">✓ Date: <strong>${new Date(date + 'T00:00:00').toLocaleDateString('en-IN', {weekday:'short',day:'numeric',month:'long',year:'numeric'})}</strong></p>
+                        <p class="text-green-700">✓ Time: <strong>${slot}</strong></p>
+                        <p class="text-green-700">✓ Credits deducted: <strong>${data.charged}</strong> &nbsp;|  New balance: <strong>${data.new_balance}</strong></p>
+                        <a href="{% url 'booking_calendar' %}" class="inline-block mt-2 text-teal-700 font-semibold underline">View in Calendar →</a>
+                    </div>
+                </div>`;
+            successMessage.style.display = 'block';
+            successMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            if (_pendingBookBtn) {
+                _pendingBookBtn.textContent = '✓ Booked!';
+                _pendingBookBtn.style.background = 'linear-gradient(to right, #16a34a, #15803d)';
+                _pendingBookBtn.disabled = true;
+            }
+        } catch(err) {
+            errEl.textContent = 'Request failed. Please try again.';
+            errEl.classList.remove('hidden');
+            this.disabled = false;
+            this.textContent = 'Confirm Booking';
+        }
+    });
 });
 </script>
 {% endblock %} 

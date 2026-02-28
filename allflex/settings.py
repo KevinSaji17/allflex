@@ -55,8 +55,9 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'accounts.middleware.MongoAuthenticationMiddleware',  # Custom middleware for MongoDB support
+    'accounts.admin_middleware.AdminSessionMiddleware',  # Handle admin/MongoDB session conflicts
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -84,12 +85,74 @@ WSGI_APPLICATION = 'allflex.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# MongoDB or SQLite configuration based on DATABASE_MODE env var
+DATABASE_MODE = os.getenv('DATABASE_MODE', 'sqlite').lower()
+
+if DATABASE_MODE == 'mongodb':
+    # MongoDB Configuration (using MongoEngine)
+    import mongoengine
+    
+    MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'allflex_db')
+    MONGO_DB_USER = os.getenv('MONGO_DB_USER', '')
+    MONGO_DB_PASSWORD = os.getenv('MONGO_DB_PASSWORD', '')
+    MONGO_DB_HOST = os.getenv('MONGO_DB_HOST', '')
+    
+    # Build MongoDB connection string for Atlas
+    if MONGO_DB_USER and MONGO_DB_PASSWORD and MONGO_DB_HOST:
+        MONGODB_CONNECTION_STRING = (
+            f"mongodb+srv://{MONGO_DB_USER}:{MONGO_DB_PASSWORD}@{MONGO_DB_HOST}/"
+            f"{MONGO_DB_NAME}?retryWrites=true&w=majority&appName=AllFlex"
+        )
+    else:
+        # Fallback for local MongoDB
+        MONGODB_CONNECTION_STRING = f"mongodb://localhost:27017/{MONGO_DB_NAME}"
+    
+    # Connect to MongoDB using MongoEngine
+    try:
+        mongoengine.connect(
+            db=MONGO_DB_NAME,
+            host=MONGODB_CONNECTION_STRING,
+            alias='default',
+            maxPoolSize=50,
+            minPoolSize=10,
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=10000,
+            socketTimeoutMS=10000,
+        )
+        print(f"[OK] Connected to MongoDB: {MONGO_DB_NAME}")
+    except Exception as e:
+        print(f"[ERROR] MongoDB connection failed: {e}")
+        print("[WARNING] Check your .env file and MongoDB Atlas setup")
+    
+    # Django still needs a dummy database for contrib apps (admin, sessions, etc.)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db_dummy.sqlite3',
+        }
     }
-}
+    
+    # Use custom authentication backend for MongoDB
+    AUTHENTICATION_BACKENDS = [
+        'accounts.auth_backends.MongoEngineAuthBackend',
+        'accounts.auth_backends.SafeModelBackend',  # Safe SQL backend that handles ObjectIds
+    ]
+    
+    # Use custom session serializer for MongoDB ObjectId
+    SESSION_SERIALIZER = 'accounts.session_serializers.MongoJSONSerializer'
+    
+else:
+    # SQLite (default for development/testing)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+    
+    AUTHENTICATION_BACKENDS = [
+        'django.contrib.auth.backends.ModelBackend',
+    ]
 
 
 # Password validation
@@ -134,6 +197,10 @@ STATICFILES_DIRS = [
     BASE_DIR / 'theme' / 'static',
 ]
 
+# Media files (User uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -149,9 +216,31 @@ LOGOUT_REDIRECT_URL = 'home'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 days
 
+# CSRF Settings for development
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF cookie if needed
+CSRF_COOKIE_SAMESITE = 'Lax'  # Less restrictive for development
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
+CSRF_USE_SESSIONS = False  # Use cookie-based CSRF (default, more reliable)
+
+# Session cookie settings
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_HTTPONLY = True
+
 # Tailwind CSS configuration
 TAILWIND_APP_NAME = 'theme'
 NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
 
 # Google Gemini API Key for gym recommendations
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', 'YOUR_API_KEY_HERE')
+
+# Email Configuration (Development - Console Backend)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@allflex.com'
+
+# For production, use SMTP:
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+# EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+# EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')

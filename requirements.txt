@@ -3,3 +3,8 @@ python-dotenv>=1.0
 django-tailwind>=3.0
 google-genai>=1.0
 Pillow>=10.0
+
+# MongoDB Integration
+mongoengine>=0.28.0
+pymongo>=4.6.0
+dnspython>=2.4.0

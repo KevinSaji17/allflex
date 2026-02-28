@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Booking Calendar – Allflex{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50 py-8 px-4">
+  <div class="max-w-5xl mx-auto">
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div>
+        <h1 class="text-3xl font-extrabold text-gray-900">My Booking Calendar</h1>
+        <p class="text-gray-500 mt-1">Track all your gym visits at a glance.</p>
+      </div>
+      <a href="{% url 'user_dashboard' %}" class="inline-flex items-center gap-2 bg-white border-2 border-teal-500 text-teal-700 font-semibold px-5 py-2.5 rounded-xl hover:bg-teal-50 transition-all shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Back to Dashboard
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- ── Calendar Panel ─────────────────────────────────── -->
+      <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Month Navigation -->
+        <div class="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-teal-600 to-teal-700">
+          <button id="prevMonth" class="text-white hover:text-teal-200 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <h2 id="calendarTitle" class="text-xl font-bold text-white"></h2>
+          <button id="nextMonth" class="text-white hover:text-teal-200 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <!-- Day-of-week headers -->
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);" class="border-b border-gray-100">
+          <div class="text-center text-xs font-bold text-gray-400 py-3">Mon</div>
+          <div class="text-center text-xs font-bold text-gray-400 py-3">Tue</div>
+          <div class="text-center text-xs font-bold text-gray-400 py-3">Wed</div>
+          <div class="text-center text-xs font-bold text-gray-400 py-3">Thu</div>
+          <div class="text-center text-xs font-bold text-gray-400 py-3">Fri</div>
+          <div class="text-center text-xs font-bold text-gray-400 py-3">Sat</div>
+          <div class="text-center text-xs font-bold text-gray-400 py-3">Sun</div>
+        </div>
+
+        <!-- Calendar grid (filled by JS) -->
+        <div id="calendarGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background-color:#f3f4f6;"></div>
+
+        <!-- Legend -->
+        <div class="flex flex-wrap items-center gap-4 px-6 py-3 border-t border-gray-100 text-xs text-gray-500">
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>Booked</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>Checked In</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-gray-400 inline-block"></span>Completed</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-400 inline-block"></span>Cancelled</span>
+        </div>
+      </div>
+
+      <!-- ── Sidebar: Upcoming + Day Detail ─────────────────── -->
+      <div class="flex flex-col gap-4">
+
+        <!-- Day Detail Panel (shown when day clicked) -->
+        <div id="dayDetail" class="hidden bg-white rounded-2xl shadow-sm border border-teal-200 p-5">
+          <h3 id="dayDetailTitle" class="text-base font-bold text-teal-700 mb-3"></h3>
+          <div id="dayDetailContent"></div>
+        </div>
+
+        <!-- Upcoming Bookings Sidebar -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex-1">
+          <h3 class="text-base font-bold text-gray-800 mb-4">Upcoming Visits</h3>
+          <div id="upcomingList">
+            <p class="text-sm text-gray-400">Loading…</p>
+          </div>
+        </div>
+
+        <!-- Stats Card -->
+        <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl border border-teal-200 p-5">
+          <h3 class="text-base font-bold text-teal-800 mb-3">My Stats</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white rounded-xl p-3 text-center shadow-sm">
+              <p id="statTotal" class="text-2xl font-extrabold text-teal-700">–</p>
+              <p class="text-xs text-gray-500 mt-0.5">Total Bookings</p>
+            </div>
+            <div class="bg-white rounded-xl p-3 text-center shadow-sm">
+              <p id="statMonth" class="text-2xl font-extrabold text-teal-700">–</p>
+              <p class="text-xs text-gray-500 mt-0.5">This Month</p>
+            </div>
+            <div class="bg-white rounded-xl p-3 text-center shadow-sm">
+              <p id="statCredits" class="text-2xl font-extrabold text-red-500">–</p>
+              <p class="text-xs text-gray-500 mt-0.5">Credits Spent</p>
+            </div>
+            <div class="bg-white rounded-xl p-3 text-center shadow-sm">
+              <p id="statUpcoming" class="text-2xl font-extrabold text-blue-500">–</p>
+              <p class="text-xs text-gray-500 mt-0.5">Upcoming</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end grid -->
+  </div><!-- end max-w -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Data & State ──────────────────────────────────────────────────────────
+let allBookings   = [];
+let currentYear   = new Date().getFullYear();
+let currentMonth  = new Date().getMonth(); // 0-based
+
+const STATUS_COLORS = {
+    booked:     { dot: 'bg-blue-500',  chip: 'bg-blue-100 text-blue-800' },
+    checked_in: { dot: 'bg-green-500', chip: 'bg-green-100 text-green-800' },
+    completed:  { dot: 'bg-gray-400',  chip: 'bg-gray-100 text-gray-700' },
+    cancelled:  { dot: 'bg-red-400',   chip: 'bg-red-100 text-red-700' },
+};
+
+// ── Fetch Bookings ────────────────────────────────────────────────────────
+async function fetchBookings() {
+    try {
+        const resp = await fetch('{% url "get_user_bookings" %}');
+        const data = await resp.json();
+        allBookings = data.bookings || [];
+        renderCalendar();
+        renderUpcoming();
+        renderStats();
+    } catch (e) {
+        console.error('Failed to load bookings', e);
+    }
+}
+
+// Group bookings by "YYYY-MM-DD" key
+function bookingsByDate() {
+    const map = {};
+    allBookings.forEach(b => {
+        const key = b.booking_date || '';  // already "YYYY-MM-DD"
+        if (!key) return;
+        if (!map[key]) map[key] = [];
+        map[key].push(b);
+    });
+    return map;
+}
+
+// ── Calendar Renderer ─────────────────────────────────────────────────────
+function renderCalendar() {
+    const MONTHS = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    document.getElementById('calendarTitle').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+
+    const grid  = document.getElementById('calendarGrid');
+    const byDay = bookingsByDate();
+    grid.innerHTML = '';
+
+    // First day of month (0=Sun..6=Sat → convert to Mon-based)
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const startPad = (firstDay === 0) ? 6 : firstDay - 1;
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const today = new Date();
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+    // Leading empties
+    for (let i = 0; i < startPad; i++) {
+        const blank = document.createElement('div');
+        blank.style.cssText = 'background:#fff;min-height:80px;';
+        grid.appendChild(blank);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dayBookings = byDay[key] || [];
+        const isToday = key === todayKey;
+
+        const cell = document.createElement('div');
+        cell.style.cssText = `background:#fff;min-height:80px;padding:6px;cursor:pointer;box-sizing:border-box;${isToday ? 'outline:2px solid #0d9488;outline-offset:-2px;' : ''}`;
+        cell.onmouseover = () => { cell.style.background = '#f0fdfa'; };
+        cell.onmouseout  = () => { cell.style.background = isToday ? '#fff' : '#fff'; };
+
+        // Day number badge
+        const num = document.createElement('span');
+        num.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:12px;font-weight:700;margin-bottom:4px;${isToday ? 'background:#0d9488;color:#fff;' : 'color:#374151;'}`;
+        num.textContent = d;
+        cell.appendChild(num);
+
+        // Booking chips
+        const STATUS_BG = { booked:'#dbeafe', checked_in:'#dcfce7', completed:'#f3f4f6', cancelled:'#fee2e2' };
+        const STATUS_FG = { booked:'#1d4ed8', checked_in:'#15803d', completed:'#4b5563', cancelled:'#b91c1c' };
+        dayBookings.slice(0, 3).forEach(b => {
+            const chip = document.createElement('div');
+            chip.style.cssText = `display:block;width:100%;font-size:9px;font-weight:600;padding:2px 4px;border-radius:4px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:${STATUS_BG[b.status]||'#dbeafe'};color:${STATUS_FG[b.status]||'#1d4ed8'};`;
+            chip.textContent = b.gym_name;
+            cell.appendChild(chip);
+        });
+        if (dayBookings.length > 3) {
+            const more = document.createElement('div');
+            more.style.cssText = 'font-size:9px;color:#9ca3af;font-weight:600;';
+            more.textContent = `+${dayBookings.length - 3} more`;
+            cell.appendChild(more);
+        }
+
+        cell.addEventListener('click', () => showDayDetail(key, d, dayBookings));
+        grid.appendChild(cell);
+    }
+}
+
+// ── Day Detail Panel ──────────────────────────────────────────────────────
+function showDayDetail(dateKey, day, bookings) {
+    const panel = document.getElementById('dayDetail');
+    const title = document.getElementById('dayDetailTitle');
+    const content = document.getElementById('dayDetailContent');
+    const MONTHS = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    title.textContent = `${day} ${MONTHS[currentMonth]} ${currentYear}`;
+
+    if (bookings.length === 0) {
+        content.innerHTML = '<p class="text-sm text-gray-400">No bookings on this day.</p>';
+    } else {
+        content.innerHTML = bookings.map(b => {
+            const colors = STATUS_COLORS[b.status] || STATUS_COLORS.booked;
+            return `
+            <div class="mb-3 last:mb-0 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                <p class="font-bold text-gray-800 text-sm">${b.gym_name}</p>
+                ${b.time_slot && b.time_slot !== '—' ? `<p class="text-xs text-teal-700 mt-0.5 font-medium">🕐 ${b.time_slot}</p>` : ''}
+                <div class="flex items-center gap-2 mt-1.5">
+                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${colors.chip}">${b.status.replace('_', ' ')}</span>
+                    <span class="text-xs text-red-500 font-semibold">−${b.credits_charged} credits</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    panel.classList.remove('hidden');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Upcoming Bookings Sidebar ─────────────────────────────────────────────
+function renderUpcoming() {
+    const container = document.getElementById('upcomingList');
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    const upcoming = allBookings
+        .filter(b => {
+            if (b.status === 'cancelled') return false;
+            const d = b.booking_date ? new Date(b.booking_date + 'T00:00:00') : null;
+            return d && d >= today;
+        })
+        .sort((a, b) => new Date(a.booking_date) - new Date(b.booking_date))
+        .slice(0, 10);
+
+    if (upcoming.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-400">No upcoming visits.</p>';
+        return;
+    }
+    container.innerHTML = upcoming.map(b => `
+        <div class="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
+            <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 text-xs font-bold flex flex-col items-center justify-center flex-shrink-0 leading-tight">
+                ${b.booking_date ? b.booking_date.slice(8,10) : '—'}<br>
+                <span class="text-[9px] uppercase">${b.booking_date ? new Date(b.booking_date+'T00:00:00').toLocaleString('en-IN',{month:'short'}) : ''}</span>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="font-semibold text-gray-800 text-sm truncate">${b.gym_name}</p>
+                <p class="text-xs text-gray-500 truncate">${b.time_slot && b.time_slot !== '—' ? b.time_slot : 'Time not set'}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────
+function renderStats() {
+    const now = new Date();
+    document.getElementById('statTotal').textContent = allBookings.length;
+    document.getElementById('statCredits').textContent = allBookings.reduce((s, b) => s + (b.credits_charged || 0), 0);
+    document.getElementById('statMonth').textContent = allBookings.filter(b => {
+        if (!b.booking_date) return false;
+        const d = new Date(b.booking_date + 'T00:00:00');
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    document.getElementById('statUpcoming').textContent = allBookings.filter(b => {
+        if (b.status === 'cancelled') return false;
+        if (!b.booking_date) return false;
+        return new Date(b.booking_date + 'T00:00:00') >= today;
+    }).length;
+}
+
+// ── Month Navigation ──────────────────────────────────────────────────────
+document.getElementById('prevMonth').addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    document.getElementById('dayDetail').classList.add('hidden');
+    renderCalendar();
+});
+document.getElementById('nextMonth').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    document.getElementById('dayDetail').classList.add('hidden');
+    renderCalendar();
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+fetchBookings();
+</script>
+{% endblock %}

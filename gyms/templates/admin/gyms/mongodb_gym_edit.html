@@ -1,0 +1,71 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <h1>Edit Gym: {{ gym.name }}</h1>
+    
+    <form method="POST" style="max-width: 800px;">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Name:</label>
+            <input type="text" name="name" value="{{ gym.name }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Description:</label>
+            <textarea name="description" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>{{ gym.description }}</textarea>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Location:</label>
+            <input type="text" name="location" value="{{ gym.location }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Tier:</label>
+                <select name="tier" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                    <option value="1" {% if gym.tier == 1 %}selected{% endif %}>Tier 1</option>
+                    <option value="2" {% if gym.tier == 2 %}selected{% endif %}>Tier 2</option>
+                    <option value="3" {% if gym.tier == 3 %}selected{% endif %}>Tier 3</option>
+                    <option value="4" {% if gym.tier == 4 %}selected{% endif %}>Tier 4</option>
+                </select>
+            </div>
+            
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Capacity:</label>
+                <input type="number" name="capacity" value="{{ gym.capacity }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Status:</label>
+            <select name="status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                <option value="pending" {% if gym.status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="approved" {% if gym.status == 'approved' %}selected{% endif %}>Approved</option>
+                <option value="rejected" {% if gym.status == 'rejected' %}selected{% endif %}>Rejected</option>
+            </select>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" name="is_active" {% if gym.is_active %}checked{% endif %} style="margin-right: 8px;">
+                <span style="font-weight: bold;">Active</span>
+            </label>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" name="is_verified_partner" {% if gym.is_verified_partner %}checked{% endif %} style="margin-right: 8px;">
+                <span style="font-weight: bold;">ALLFLEX Verified Partner (Show Badge)</span>
+            </label>
+        </div>
+        
+        <div>
+            <button type="submit" class="button button-primary">Save Changes</button>
+            <a href="/admin/gyms/mongodb-gyms/" class="button">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

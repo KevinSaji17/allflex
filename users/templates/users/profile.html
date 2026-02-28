@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-white to-gray-50 py-12">
+    <div class="container mx-auto px-6 max-w-6xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">My Profile</h1>
+            <p class="text-gray-600 mt-2">Track your fitness journey and manage your preferences</p>
+        </div>
+
+        <!-- Database Error Alert -->
+        {% if db_error %}
+        <div class="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-yellow-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <p class="text-yellow-800 font-medium">{{ db_error }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- Left Column: User Info & Stats -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- User Card -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-teal-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-bold mb-4">
+                            {{ user.first_name.0|default:user.username.0|upper }}
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900">{{ user.first_name|default:user.username }}</h2>
+                        <p class="text-gray-600 text-sm">{{ user.email }}</p>
+                        <p class="text-xs text-gray-500 mt-2">Member since {{ user.date_joined|date:"M Y" }}</p>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Your Stats</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">💪</span>
+                                <span class="text-sm text-gray-600">Total Visits</span>
+                            </div>
+                            <span class="text-xl font-bold text-teal-600">{{ profile.total_visits|default:0 }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">⭐</span>
+                                <span class="text-sm text-gray-600">Credits Spent</span>
+                            </div>
+                            <span class="text-xl font-bold text-purple-600">{{ profile.total_credits_spent|default:0 }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">💳</span>
+                                <span class="text-sm text-gray-600">Current Credits</span>
+                            </div>
+                            <span class="text-xl font-bold text-emerald-600">{{ user.credits }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="text-2xl">❤️</span>
+                                <span class="text-sm text-gray-600">Favorite Gyms</span>
+                            </div>
+                            <span class="text-xl font-bold text-pink-600">{{ favorite_gyms.count }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if bmi %}
+                <!-- BMI Card -->
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-6 border border-blue-200">
+                    <h3 class="text-lg font-bold text-blue-900 mb-2">Your BMI</h3>
+                    <p class="text-4xl font-bold text-blue-700">{{ bmi }}</p>
+                    <p class="text-sm text-blue-600 mt-2">
+                        {% if bmi < 18.5 %}Underweight
+                        {% elif bmi < 25 %}Normal weight
+                        {% elif bmi < 30 %}Overweight
+                        {% else %}Obese
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column: Profile Details & Favorites -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Fitness Profile Form -->
+                <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6">Fitness Information</h3>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="current_weight" class="block text-sm font-semibold text-gray-700 mb-2">Current Weight (kg)</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    name="current_weight" 
+                                    id="current_weight" 
+                                    value="{{ profile.current_weight|default:'' }}"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                    placeholder="e.g., 70.5"
+                                >
+                            </div>
+
+                            <div>
+                                <label for="target_weight" class="block text-sm font-semibold text-gray-700 mb-2">Target Weight (kg)</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    name="target_weight" 
+                                    id="target_weight" 
+                                    value="{{ profile.target_weight|default:'' }}"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                    placeholder="e.g., 65.0"
+                                >
+                            </div>
+
+                            <div>
+                                <label for="height" class="block text-sm font-semibold text-gray-700 mb-2">Height (cm)</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    name="height" 
+                                    id="height" 
+                                    value="{{ profile.height|default:'' }}"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                    placeholder="e.g., 175"
+                                >
+                            </div>
+
+                            <div>
+                                <label for="age" class="block text-sm font-semibold text-gray-700 mb-2">Age</label>
+                                <input 
+                                    type="number" 
+                                    name="age" 
+                                    id="age" 
+                                    value="{{ profile.age|default:'' }}"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                    placeholder="e.g., 25"
+                                >
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label for="fitness_goal" class="block text-sm font-semibold text-gray-700 mb-2">Fitness Goal</label>
+                                <input 
+                                    type="text" 
+                                    name="fitness_goal" 
+                                    id="fitness_goal" 
+                                    value="{{ profile.fitness_goal|default:'' }}"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                    placeholder="e.g., Weight loss, Muscle gain, General fitness"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="mt-6">
+                            <button 
+                                type="submit" 
+                                class="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Favorite Gyms Section -->
+                <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <span>❤️</span> Favorite Gyms
+                    </h3>
+
+                    {% if favorite_gyms %}
+                        <div class="grid md:grid-cols-2 gap-4">
+                            {% for favorite in favorite_gyms %}
+                                <div class="border border-gray-200 rounded-xl p-5 hover:border-teal-300 hover:shadow-md transition-all">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2 flex-wrap mb-1">
+                                                <h4 class="font-bold text-gray-900">{{ favorite.gym.name|default:favorite.gym_name }}</h4>
+                                                {% if favorite.gym and favorite.gym.is_verified_partner %}
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-600 text-white shadow-sm">
+                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    ✓
+                                                </span>
+                                                {% elif not favorite.gym %}
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                                                    AI-found
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            {% if favorite.gym %}
+                                            <p class="text-sm text-gray-600 mt-1">📍 {{ favorite.gym.location }}</p>
+                                            {% else %}
+                                            <p class="text-sm text-gray-600 mt-1">📍 From AI search results</p>
+                                            {% endif %}
+                                        </div>
+                                        {% if favorite.gym %}
+                                        <span class="inline-flex items-center rounded-full 
+                                            {% if favorite.gym.tier == 1 %}bg-blue-100 text-blue-700
+                                            {% elif favorite.gym.tier == 2 %}bg-emerald-100 text-emerald-700
+                                            {% elif favorite.gym.tier == 3 %}bg-purple-100 text-purple-700
+                                            {% else %}bg-gradient-to-r from-amber-100 to-orange-100 text-orange-700
+                                            {% endif %} 
+                                            px-3 py-1 text-xs font-bold">
+                                            T{{ favorite.gym.tier }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs">
+                                        {% if favorite.gym %}
+                                        <span class="text-gray-500">
+                                            {% if favorite.gym.tier == 1 %}5 credits
+                                            {% elif favorite.gym.tier == 2 %}9 credits
+                                            {% elif favorite.gym.tier == 3 %}13 credits
+                                            {% else %}18 credits
+                                            {% endif %}/visit
+                                        </span>
+                                        {% endif %}
+                                        <a href="{% url 'user_dashboard' %}" class="text-teal-600 hover:text-teal-700 font-semibold">Go to Dashboard →</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <span class="text-6xl mb-4 block">💔</span>
+                            <p class="text-gray-600 font-semibold">You haven't favorited any gyms yet.</p>
+                            <p class="text-sm text-gray-500 mt-2">Start exploring and mark your favorites!</p>
+                            <a href="{% url 'user_dashboard' %}" class="inline-block mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition">
+                                Find Gyms
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
