@@ -112,48 +112,6 @@
                 </div>
             </div>
             
-            <!-- Credit Pack Cards -->
-            <h3 class="text-2xl font-bold text-stone-900 mb-6">Buy Credit Packs</h3>
-            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {% for pack_info in pack_data %}
-                <article class="group relative flex flex-col rounded-2xl bg-white shadow-md ring-1 ring-black/5 transition hover:shadow-xl">
-                    {% if pack_info.pack.is_best_value %}
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-900 shadow">Best value</div>
-                    {% endif %}
-                    <div class="h-1.5 rounded-t-2xl {{ pack_info.icon_bg }}"></div>
-                    <div class="flex flex-1 flex-col p-6">
-                        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl {{ pack_info.icon_bg }} {{ pack_info.icon_color }}">
-                            {% if pack_info.icon == 'bolt' %}
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
-                            {% elif pack_info.icon == 'fire' %}
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.663-.57 1-.147.308-.303.642-.498 1.057-.125.262-.376.576-.737.848-.248.186-.528.32-.846.402-.319.083-.671.116-1.049.116-.329 0-.65-.032-.96-.09-.306-.057-.6-.14-.88-.254-.28-.114-.544-.264-.79-.454a2.02 2.02 0 01-.458-.547 1.002 1.002 0 00-.985-.723c-.506 0-.927.393-.998.902a6.036 6.036 0 01-.315 1.553c-.24.593-.524 1.14-.846 1.639-.322.498-.675.944-1.057 1.328a9.94 9.94 0 01-1.328 1.057c-.498.322-.1046.524-1.639.846-.593.24-1.046.475-1.553.715-.507.24-1.055.415-1.616.53-.561.114-1.149.17-1.747.17H2a1 1 0 100 2h.464c.659 0 1.307-.063 1.942-.184.635-.12 1.255-.29 1.849-.507.593-.217 1.156-.485 1.686-.803.53-.319 1.02-.69 1.469-1.11.448-.422.85-.893 1.203-1.413.353-.52.653-1.09.9-1.706.247-.616.438-1.27.574-1.96.136-.69.217-1.42.243-2.19.026-.77-.005-1.54-.093-2.298-.088-.759-.234-1.498-.437-2.215-.203-.718-.465-1.41-.785-2.073a9.853 9.853 0 00-1.175-1.803 8.957 8.957 0 00-1.557-1.453c-.583-.4-1.218-.73-1.9-.985-.682-.255-1.406-.434-2.17-.534a1 1 0 01-.903-.903 1.001 1.001 0 01.577-1.204c.47-.194.97-.344 1.494-.45.524-.107 1.069-.161 1.635-.161z" clip-rule="evenodd"/></svg>
-                            {% elif pack_info.icon == 'star' %}
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                            {% elif pack_info.icon == 'crown' %}
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 102 0V8a1 1 0 00-.553-.894l-1-1a1 1 0 00-1.11 0l-1 1z" clip-rule="evenodd"/></svg>
-                            {% else %}
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
-                            {% endif %}
-                        </div>
-                        <h3 class="text-lg font-bold text-stone-900">{{ pack_info.pack.name }}</h3>
-                        <p class="mt-2 text-3xl font-bold text-stone-900">₹{{ pack_info.pack.price }}</p>
-                        <p class="text-sm text-stone-500">{{ pack_info.pack.credits }} credits · ₹{{ pack_info.pack.price_per_credit }}/credit</p>
-                        <ul class="mt-4 flex-1 space-y-2 text-sm text-stone-600">
-                            {% for f in pack_info.features %}
-                            <li class="flex items-center gap-2">
-                                <svg class="h-4 w-4 shrink-0 text-teal-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                {{ f }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                        <button type="button" class="mt-6 w-full rounded-xl bg-teal-600 py-3.5 text-sm font-semibold text-white shadow transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
-                            Get this pack
-                        </button>
-                    </div>
-                </article>
-                {% endfor %}
-            </div>
-            
             <!-- Tier Checklist: What Each Tier Includes -->
             <div class="mt-12 rounded-2xl bg-white p-8 shadow-lg ring-1 ring-black/5">
                 <h3 class="text-2xl font-bold text-stone-900 mb-6 text-center">What to Expect at Each Tier</h3>

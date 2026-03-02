@@ -851,9 +851,12 @@ def user_profile(request):
     Display and update user profile with fitness tracking
     """
     from pymongo.errors import NetworkTimeout
+    from datetime import datetime, timedelta
+    import hashlib
     
     UserFitnessProfile = get_user_fitness_profile_model()
     FavoriteGym = get_favorite_gym_model()
+    GymBooking = get_gym_booking_model()
     
     fitness_profile = None
     favorite_gyms = []
@@ -870,8 +873,22 @@ def user_profile(request):
             else:
                 print(f"[INFO] Found fitness profile for {request.user.username}: visits={fitness_profile.total_visits}, credits_spent={fitness_profile.total_credits_spent}")
             
-            # Get favorite gyms
-            favorite_gyms = FavoriteGym.objects(user=request.user).order_by('-created_at')
+            # Get favorite gyms with last visited info
+            favorite_gyms_objs = FavoriteGym.objects(user=request.user).order_by('-created_at')
+            favorite_gyms = []
+            for fav in favorite_gyms_objs:
+                # Get last booking for this gym
+                last_booking = GymBooking.objects(user=request.user, gym_name=fav.gym_name).order_by('-booking_date').first()
+                favorite_gyms.append({
+                    'gym': fav.gym,
+                    'gym_name': fav.gym_name,
+                    'created_at': fav.created_at,
+                    'last_visited': last_booking.booking_date if last_booking else None
+                })
+            
+            # Get recent bookings for activity feed
+            recent_bookings = GymBooking.objects(user=request.user).order_by('-booked_at').limit(10)
+            
         else:
             fitness_profile, created = UserFitnessProfile.objects.get_or_create(user=request.user)
             if created:
@@ -879,14 +896,30 @@ def user_profile(request):
             else:
                 print(f"[INFO] Found fitness profile for {request.user.username}: visits={fitness_profile.total_visits}, credits_spent={fitness_profile.total_credits_spent}")
             
-            # Get favorite gyms
-            favorite_gyms = FavoriteGym.objects.filter(user=request.user).order_by('-created_at')
+            # Get favorite gyms with last visited info
+            favorite_gyms_objs = FavoriteGym.objects.filter(user=request.user).order_by('-created_at')
+            favorite_gyms = []
+            for fav in favorite_gyms_objs:
+                # Get last booking for this gym
+                last_booking = GymBooking.objects.filter(user=request.user, gym__id=fav.gym.id if fav.gym else None).order_by('-booking_date').first()
+                favorite_gyms.append({
+                    'gym': fav.gym,
+                    'gym_name': fav.gym_name if hasattr(fav, 'gym_name') else (fav.gym.name if fav.gym else 'Unknown'),
+                    'created_at': fav.created_at,
+                    'last_visited': last_booking.booking_date if last_booking else None
+                })
+            
+            # Get recent bookings for activity feed
+            recent_bookings = GymBooking.objects.filter(user=request.user).order_by('-booked_at')[:10]
+            
     except NetworkTimeout as e:
         print(f"[WARNING] MongoDB timeout in user_profile: {e}")
         db_error = "Database connection is slow. Some profile data may not load. Please refresh in a moment."
+        recent_bookings = []
     except Exception as e:
         print(f"[ERROR] Error loading profile data: {e}")
         db_error = "Error loading profile data. Please try again."
+        recent_bookings = []
     
     if request.method == 'POST':
         # Update profile
@@ -907,11 +940,118 @@ def user_profile(request):
             print(f"[ERROR] Updating profile: {e}")
             db_error = f"Error updating profile: {str(e)}"
     
+    # Calculate achievements
+    visits = fitness_profile.total_visits if fitness_profile else 0
+    achievements = []
+    if visits >= 1:
+        achievements.append({'name': 'First Visit', 'icon': '🎯', 'unlocked': True})
+    if visits >= 5:
+        achievements.append({'name': '5 Visits', 'icon': '🔥', 'unlocked': True})
+    if visits >= 10:
+        achievements.append({'name': '10 Visits', 'icon': '💪', 'unlocked': True})
+    else:
+        achievements.append({'name': '10 Visits', 'icon': '💪', 'unlocked': False})
+    if visits >= 25:
+        achievements.append({'name': '25 Visits', 'icon': '🌟', 'unlocked': True})
+    else:
+        achievements.append({'name': '25 Visits', 'icon': '🌟', 'unlocked': False})
+    if visits >= 50:
+        achievements.append({'name': '50 Visits', 'icon': '🏆', 'unlocked': True})
+    else:
+        achievements.append({'name': '50 Visits', 'icon': '🏆', 'unlocked': False})
+    if visits >= 100:
+        achievements.append({'name': '100 Visits', 'icon': '👑', 'unlocked': True})
+    else:
+        achievements.append({'name': '100 Visits', 'icon': '👑', 'unlocked': False})
+    
+    # Generate referral code
+    referral_code = hashlib.md5(f"{request.user.id}{request.user.username}".encode()).hexdigest()[:8].upper()
+    
+    # Calculate progress toward fitness goal
+    goal_progress = 0
+    if fitness_profile and fitness_profile.current_weight and fitness_profile.target_weight:
+        start_weight = fitness_profile.current_weight
+        target_weight = fitness_profile.target_weight
+        # Simple progress calculation - can be enhanced
+        weight_diff = abs(start_weight - target_weight)
+        if weight_diff > 0:
+            goal_progress = min(100, (visits / 30) * 100)  # Assuming 30 visits is good progress
+    
+    # Get user role
+    user_role = 'Regular User'
+    if hasattr(request.user, 'is_superuser') and request.user.is_superuser:
+        user_role = 'Admin'
+    elif hasattr(request.user, 'role'):
+        if request.user.role == 'gym_owner':
+            user_role = 'Gym Owner'
+        elif request.user.role == 'admin':
+            user_role = 'Admin'
+    
+    # Calculate weekly trend (comparing last 7 days vs previous 7 days)
+    now = datetime.now()
+    last_week_start = now - timedelta(days=7)
+    prev_week_start = now - timedelta(days=14)
+    
+    try:
+        if is_mongodb():
+            last_week_visits = GymBooking.objects(user=request.user, booked_at__gte=last_week_start).count()
+            prev_week_visits = GymBooking.objects(user=request.user, booked_at__gte=prev_week_start, booked_at__lt=last_week_start).count()
+        else:
+            last_week_visits = GymBooking.objects.filter(user=request.user, booked_at__gte=last_week_start).count()
+            prev_week_visits = GymBooking.objects.filter(user=request.user, booked_at__gte=prev_week_start, booked_at__lt=last_week_start).count()
+        
+        weekly_trend = 'up' if last_week_visits > prev_week_visits else ('down' if last_week_visits < prev_week_visits else 'same')
+    except:
+        weekly_trend = 'same'
+        last_week_visits = 0
+    
     context = {
         'profile': fitness_profile,
         'favorite_gyms': favorite_gyms,
         'bmi': fitness_profile.bmi() if fitness_profile else None,
         'db_error': db_error,
+        'achievements': achievements,
+        'referral_code': referral_code,
+        'goal_progress': goal_progress,
+        'user_role': user_role,
+        'recent_bookings': recent_bookings,
+        'weekly_trend': weekly_trend,
+        'last_week_visits': last_week_visits,
     }
     
     return render(request, 'users/profile.html', context)
+
+
+@login_required
+def booking_history(request):
+    """
+    Get all bookings for the user
+    """
+    try:
+        GymBooking = get_gym_booking_model()
+        
+        if is_mongodb():
+            bookings = GymBooking.objects(user=request.user).order_by('-booked_at')
+        else:
+            bookings = GymBooking.objects.filter(user=request.user).order_by('-booked_at')
+        
+        booking_list = []
+        for booking in bookings:
+            booking_data = {
+                'id': str(booking.id),
+                'gym_name': booking.gym_name,
+                'tier': booking.tier,
+                'credits_charged': booking.credits_charged,
+                'status': booking.status,
+                'booked_at': booking.booked_at.isoformat() if hasattr(booking.booked_at, 'isoformat') else str(booking.booked_at),
+                'booking_date': booking.booking_date.isoformat() if hasattr(booking.booking_date, 'isoformat') else str(booking.booking_date),
+                'booking_date_display': booking.booking_date.strftime('%b %d, %Y') if hasattr(booking.booking_date, 'strftime') else str(booking.booking_date),
+                'time_slot': booking.time_slot if hasattr(booking, 'time_slot') else '—',
+            }
+            booking_list.append(booking_data)
+        
+        return JsonResponse({'success': True, 'bookings': booking_list})
+    
+    except Exception as e:
+        print(f"[ERROR] booking_history: {e}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

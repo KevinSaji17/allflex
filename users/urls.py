@@ -17,4 +17,5 @@ urlpatterns = [
     path('dashboard-stats/', views.get_dashboard_stats, name='get_dashboard_stats'),
     path('use-visit/', views.use_visit, name='use_visit'),
     path('toggle-favorite/', toggle_favorite_gym, name='toggle_favorite_gym'),
+    path('booking-history/', views.booking_history, name='booking_history'),
 ] 

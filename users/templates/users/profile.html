@@ -1,17 +1,111 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-b from-white to-gray-50 py-12">
-    <div class="container mx-auto px-6 max-w-6xl">
-        <!-- Header -->
-        <div class="mb-8">
-            <h1 class="text-4xl font-bold text-gray-900">My Profile</h1>
-            <p class="text-gray-600 mt-2">Track your fitness journey and manage your preferences</p>
+<style>
+/* Dark mode styles */
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --border-color: #e5e7eb;
+}
+
+[data-theme="dark"] {
+    --bg-primary: #1f2937;
+    --bg-secondary: #111827;
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+    --border-color: #374151;
+}
+
+[data-theme="dark"] .dark\:bg-gray-900 { background-color: #111827; }
+[data-theme="dark"] .dark\:bg-gray-800 { background-color: #1f2937; }
+[data-theme="dark"] .dark\:text-white { color: #f9fafb; }
+[data-theme="dark"] .dark\:text-gray-300 { color: #d1d5db; }
+[data-theme="dark"] .dark\:border-gray-700 { border-color: #374151; }
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slide-in {
+    animation: slideIn 0.6s ease-out;
+}
+
+.hover-lift {
+    transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.progress-bar {
+    transition: width 1s ease-out;
+}
+
+/* Timeline styles */
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 0;
+    bottom: -20px;
+    width: 2px;
+    background: linear-gradient(180deg, #14b8a6 0%, #a855f7 100%);
+}
+
+.timeline-item:last-child::before {
+    display: none;
+}
+
+/* Skeleton loader */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+</style>
+
+<div class="min-h-screen dark:bg-gray-900 transition-colors duration-300 py-16" style="background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);">
+    <div class="container mx-auto px-8 max-w-7xl">
+        <!-- Header with Dark Mode Toggle -->
+        <div class="mb-12 flex items-center justify-between animate-fade-in">
+            <div>
+                <h1 class="text-4xl font-bold text-white">My Profile</h1>
+                <p class="text-gray-100 mt-2">Track your fitness journey and manage your preferences</p>
+            </div>
+            <button onclick="toggleDarkMode()" class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg text-white hover:bg-white/30 transition-all">
+                <span id="themeIcon">🌙</span> Toggle Theme
+            </button>
         </div>
 
         <!-- Database Error Alert -->
         {% if db_error %}
-        <div class="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+        <div class="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg animate-slide-in">
             <div class="flex items-center">
                 <svg class="w-5 h-5 text-yellow-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
@@ -21,62 +115,115 @@
         </div>
         {% endif %}
 
-        <div class="grid lg:grid-cols-3 gap-8">
-            <!-- Left Column: User Info & Stats -->
-            <div class="lg:col-span-1 space-y-6">
-                <!-- User Card -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div class="grid lg:grid-cols-3 gap-12">
+            <!-- Left Sidebar: User Info & Quick Stats -->
+            <div class="lg:col-span-1 space-y-10">
+                <!-- User Card with Badge -->
+                <div class="bg-white dark:bg-gray-800 dark:text-white rounded-2xl p-10 shadow-lg border border-gray-100 dark:border-gray-700 hover-lift animate-fade-in">
                     <div class="flex flex-col items-center text-center">
-                        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-teal-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-bold mb-4">
-                            {{ user.first_name.0|default:user.username.0|upper }}
+                        <div class="relative mb-6">
+                            <div class="w-28 h-28 rounded-full bg-gradient-to-br from-teal-400 via-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-bold shadow-xl">
+                                {{ user.first_name.0|default:user.username.0|upper }}
+                            </div>
+                            <!-- Account Type Badge -->
+                            <span class="absolute -bottom-3 left-1/2 transform -translate-x-1/2 px-4 py-1.5 text-xs font-bold rounded-full shadow-lg
+                                {% if user_role == 'Admin' %}bg-red-500 text-white
+                                {% elif user_role == 'Gym Owner' %}bg-blue-500 text-white
+                                {% else %}bg-green-500 text-white{% endif %}">
+                                {% if user_role == 'Admin' %}👑 {{ user_role }}
+                                {% elif user_role == 'Gym Owner' %}🏋️ {{ user_role }}
+                                {% else %}🎯 {{ user_role }}{% endif %}
+                            </span>
                         </div>
-                        <h2 class="text-2xl font-bold text-gray-900">{{ user.first_name|default:user.username }}</h2>
-                        <p class="text-gray-600 text-sm">{{ user.email }}</p>
-                        <p class="text-xs text-gray-500 mt-2">Member since {{ user.date_joined|date:"M Y" }}</p>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-6">{{ user.first_name|default:user.username }}</h2>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm mt-3">{{ user.email }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Member since {{ user.date_joined|date:"M Y" }}</p>
                     </div>
                 </div>
 
-                <!-- Stats Cards -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Your Stats</h3>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
+                <!-- Enhanced Stats with Trends -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-10 shadow-lg border border-gray-100 dark:border-gray-700 hover-lift animate-slide-in">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-2">
+                        📊 Your Stats
+                        {% if weekly_trend == 'up' %}
+                        <span class="text-green-500 text-sm">▲ Trending Up</span>
+                        {% elif weekly_trend == 'down' %}
+                        <span class="text-red-500 text-sm">▼ Trending Down</span>
+                        {% endif %}
+                    </h3>
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between p-5 rounded-lg bg-gradient-to-r from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/20">
                             <div class="flex items-center gap-3">
                                 <span class="text-2xl">💪</span>
-                                <span class="text-sm text-gray-600">Total Visits</span>
+                                <div>
+                                    <span class="text-xs text-gray-600 dark:text-gray-300 block">Total Visits</span>
+                                    <span class="text-xl font-bold text-teal-600">{{ profile.total_visits|default:0 }}</span>
+                                </div>
                             </div>
-                            <span class="text-xl font-bold text-teal-600">{{ profile.total_visits|default:0 }}</span>
+                            {% if weekly_trend == 'up' %}
+                            <span class="text-green-600 font-bold">+{{ last_week_visits }}</span>
+                            {% endif %}
                         </div>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between p-5 rounded-lg bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
                             <div class="flex items-center gap-3">
                                 <span class="text-2xl">⭐</span>
-                                <span class="text-sm text-gray-600">Credits Spent</span>
+                                <div>
+                                    <span class="text-xs text-gray-600 dark:text-gray-300 block">Credits Spent</span>
+                                    <span class="text-xl font-bold text-purple-600">{{ profile.total_credits_spent|default:0 }}</span>
+                                </div>
                             </div>
-                            <span class="text-xl font-bold text-purple-600">{{ profile.total_credits_spent|default:0 }}</span>
                         </div>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between p-5 rounded-lg bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20">
                             <div class="flex items-center gap-3">
                                 <span class="text-2xl">💳</span>
-                                <span class="text-sm text-gray-600">Current Credits</span>
+                                <div>
+                                    <span class="text-xs text-gray-600 dark:text-gray-300 block">Current Credits</span>
+                                    <span class="text-xl font-bold text-emerald-600">{{ user.credits }}</span>
+                                </div>
                             </div>
-                            <span class="text-xl font-bold text-emerald-600">{{ user.credits }}</span>
                         </div>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between p-5 rounded-lg bg-gradient-to-r from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20">
                             <div class="flex items-center gap-3">
                                 <span class="text-2xl">❤️</span>
-                                <span class="text-sm text-gray-600">Favorite Gyms</span>
+                                <div>
+                                    <span class="text-xs text-gray-600 dark:text-gray-300 block">Favorite Gyms</span>
+                                    <span class="text-xl font-bold text-pink-600">{{ favorite_gyms|length }}</span>
+                                </div>
                             </div>
-                            <span class="text-xl font-bold text-pink-600">{{ favorite_gyms.count }}</span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Goals Tracker -->
+                {% if profile.fitness_goal %}
+                <div class="bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-900/20 dark:to-red-900/20 rounded-2xl p-10 border border-orange-200 dark:border-orange-800 hover-lift">
+                    <h3 class="text-lg font-bold text-orange-900 dark:text-orange-300 mb-4 flex items-center gap-2">
+                        🎯 Fitness Goal
+                    </h3>
+                    <p class="text-sm text-orange-700 dark:text-orange-300 mb-4">{{ profile.fitness_goal }}</p>
+                    <div class="w-full bg-white/50 rounded-full h-3 overflow-hidden">
+                        <div class="progress-bar h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full" style="width: {{ goal_progress }}%"></div>
+                    </div>
+                    <p class="text-xs text-orange-600 dark:text-orange-400 mt-3 font-semibold">{{ goal_progress|floatformat:0 }}% Complete</p>
+                </div>
+                {% endif %}
+
+                <!-- Referral Code -->
+                <div class="bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-10 border border-indigo-200 dark:border-indigo-800 hover-lift">
+                    <h3 class="text-lg font-bold text-indigo-900 dark:text-indigo-300 mb-4">🎁 Referral Code</h3>
+                    <div class="flex items-center gap-2">
+                        <code class="flex-1 px-4 py-3 bg-white/70 dark:bg-gray-700 rounded-lg text-indigo-700 dark:text-indigo-300 font-mono font-bold text-lg">{{ referral_code }}</code>
+                        <button onclick="copyReferral('{{ referral_code }}')" class="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">📋</button>
+                    </div>
+                    <p class="text-xs text-indigo-600 dark:text-indigo-400 mt-3">Share and earn credits!</p>
                 </div>
 
                 {% if bmi %}
                 <!-- BMI Card -->
-                <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-6 border border-blue-200">
-                    <h3 class="text-lg font-bold text-blue-900 mb-2">Your BMI</h3>
-                    <p class="text-4xl font-bold text-blue-700">{{ bmi }}</p>
-                    <p class="text-sm text-blue-600 mt-2">
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-10 border border-blue-200 dark:border-blue-800 hover-lift">
+                    <h3 class="text-lg font-bold text-blue-900 dark:text-blue-300 mb-4">📊 Your BMI</h3>
+                    <p class="text-4xl font-bold text-blue-700 dark:text-blue-400">{{ bmi }}</p>
+                    <p class="text-sm text-blue-600 dark:text-blue-400 mt-3">
                         {% if bmi < 18.5 %}Underweight
                         {% elif bmi < 25 %}Normal weight
                         {% elif bmi < 30 %}Overweight
@@ -87,162 +234,312 @@
                 {% endif %}
             </div>
 
-            <!-- Right Column: Profile Details & Favorites -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Fitness Profile Form -->
-                <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6">Fitness Information</h3>
-                    <form method="POST">
-                        {% csrf_token %}
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="current_weight" class="block text-sm font-semibold text-gray-700 mb-2">Current Weight (kg)</label>
-                                <input 
-                                    type="number" 
-                                    step="0.01" 
-                                    name="current_weight" 
-                                    id="current_weight" 
-                                    value="{{ profile.current_weight|default:'' }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                    placeholder="e.g., 70.5"
-                                >
-                            </div>
-
-                            <div>
-                                <label for="target_weight" class="block text-sm font-semibold text-gray-700 mb-2">Target Weight (kg)</label>
-                                <input 
-                                    type="number" 
-                                    step="0.01" 
-                                    name="target_weight" 
-                                    id="target_weight" 
-                                    value="{{ profile.target_weight|default:'' }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                    placeholder="e.g., 65.0"
-                                >
-                            </div>
-
-                            <div>
-                                <label for="height" class="block text-sm font-semibold text-gray-700 mb-2">Height (cm)</label>
-                                <input 
-                                    type="number" 
-                                    step="0.01" 
-                                    name="height" 
-                                    id="height" 
-                                    value="{{ profile.height|default:'' }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                    placeholder="e.g., 175"
-                                >
-                            </div>
-
-                            <div>
-                                <label for="age" class="block text-sm font-semibold text-gray-700 mb-2">Age</label>
-                                <input 
-                                    type="number" 
-                                    name="age" 
-                                    id="age" 
-                                    value="{{ profile.age|default:'' }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                    placeholder="e.g., 25"
-                                >
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label for="fitness_goal" class="block text-sm font-semibold text-gray-700 mb-2">Fitness Goal</label>
-                                <input 
-                                    type="text" 
-                                    name="fitness_goal" 
-                                    id="fitness_goal" 
-                                    value="{{ profile.fitness_goal|default:'' }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                    placeholder="e.g., Weight loss, Muscle gain, General fitness"
-                                >
-                            </div>
-                        </div>
-
-                        <div class="mt-6">
-                            <button 
-                                type="submit" 
-                                class="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all"
-                            >
-                                Save Changes
-                            </button>
-                        </div>
-                    </form>
+            <!-- Main Content Area -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Tabs Navigation -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-lg border border-gray-100 dark:border-gray-700 animate-fade-in">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <button onclick="switchTab('profile')" id="profileTab" class="px-4 py-4 rounded-xl font-semibold transition-all bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md">
+                            📝 Profile
+                        </button>
+                        <button onclick="switchTab('favorites')" id="favoritesTab" class="px-4 py-4 rounded-xl font-semibold transition-all text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            ❤️ Favorites
+                        </button>
+                        <button onclick="switchTab('history')" id="historyTab" class="px-4 py-4 rounded-xl font-semibold transition-all text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            📅 History
+                        </button>
+                        <button onclick="switchTab('achievements')" id="achievementsTab" class="px-4 py-4 rounded-xl font-semibold transition-all text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            🏆 Achievements
+                        </button>
+                        <button onclick="switchTab('activity')" id="activityTab" class="px-4 py-4 rounded-xl font-semibold transition-all text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            📊 Activity
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Favorite Gyms Section -->
-                <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                        <span>❤️</span> Favorite Gyms
-                    </h3>
+                <!-- Profile Tab -->
+                <div id="profileContent" class="tab-content animate-fade-in">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-10 shadow-lg border border-gray-100 dark:border-gray-700 hover-lift">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-2">
+                            📝 Fitness Information
+                        </h3>
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Current Weight (kg)</label>
+                                    <input type="number" step="0.01" name="current_weight" value="{{ profile.current_weight|default:'' }}"
+                                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Target Weight (kg)</label>
+                                    <input type="number" step="0.01" name="target_weight" value="{{ profile.target_weight|default:'' }}"
+                                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Height (cm)</label>
+                                    <input type="number" step="0.01" name="height" value="{{ profile.height|default:'' }}"
+                                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Age</label>
+                                    <input type="number" name="age" value="{{ profile.age|default:'' }}"
+                                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 transition">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Fitness Goal</label>
+                                    <input type="text" name="fitness_goal" value="{{ profile.fitness_goal|default:'' }}"
+                                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 transition">
+                                </div>
+                            </div>
+                            <div class="mt-8">
+                                <button type="submit" class="px-8 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all">
+                                    💾 Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
-                    {% if favorite_gyms %}
-                        <div class="grid md:grid-cols-2 gap-4">
+                <!-- Favorites Tab -->
+                <div id="favoritesContent" class="tab-content hidden">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-10 shadow-lg border border-gray-100 dark:border-gray-700">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-2">
+                            ❤️ Favorite Gyms
+                        </h3>
+                        {% if favorite_gyms %}
+                        <div class="grid md:grid-cols-2 gap-6">
                             {% for favorite in favorite_gyms %}
-                                <div class="border border-gray-200 rounded-xl p-5 hover:border-teal-300 hover:shadow-md transition-all">
-                                    <div class="flex items-start justify-between mb-3">
-                                        <div class="flex-1">
-                                            <div class="flex items-center gap-2 flex-wrap mb-1">
-                                                <h4 class="font-bold text-gray-900">{{ favorite.gym.name|default:favorite.gym_name }}</h4>
-                                                {% if favorite.gym and favorite.gym.is_verified_partner %}
-                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-600 text-white shadow-sm">
-                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                                    </svg>
-                                                    ✓
-                                                </span>
-                                                {% elif not favorite.gym %}
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
-                                                    AI-found
-                                                </span>
-                                                {% endif %}
-                                            </div>
-                                            {% if favorite.gym %}
-                                            <p class="text-sm text-gray-600 mt-1">📍 {{ favorite.gym.location }}</p>
-                                            {% else %}
-                                            <p class="text-sm text-gray-600 mt-1">📍 From AI search results</p>
-                                            {% endif %}
-                                        </div>
-                                        {% if favorite.gym %}
-                                        <span class="inline-flex items-center rounded-full 
-                                            {% if favorite.gym.tier == 1 %}bg-blue-100 text-blue-700
-                                            {% elif favorite.gym.tier == 2 %}bg-emerald-100 text-emerald-700
-                                            {% elif favorite.gym.tier == 3 %}bg-purple-100 text-purple-700
-                                            {% else %}bg-gradient-to-r from-amber-100 to-orange-100 text-orange-700
-                                            {% endif %} 
-                                            px-3 py-1 text-xs font-bold">
-                                            T{{ favorite.gym.tier }}
-                                        </span>
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-teal-300 hover:shadow-lg transition-all hover-lift">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-gray-900 dark:text-white">{{ favorite.gym_name }}</h4>
+                                        {% if favorite.last_visited %}
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Last visited: {{ favorite.last_visited|date:"M d, Y" }}</p>
+                                        {% else %}
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Not visited yet</p>
                                         {% endif %}
-                                    </div>
-                                    <div class="flex items-center gap-3 text-xs">
-                                        {% if favorite.gym %}
-                                        <span class="text-gray-500">
-                                            {% if favorite.gym.tier == 1 %}5 credits
-                                            {% elif favorite.gym.tier == 2 %}9 credits
-                                            {% elif favorite.gym.tier == 3 %}13 credits
-                                            {% else %}18 credits
-                                            {% endif %}/visit
-                                        </span>
-                                        {% endif %}
-                                        <a href="{% url 'user_dashboard' %}" class="text-teal-600 hover:text-teal-700 font-semibold">Go to Dashboard →</a>
                                     </div>
                                 </div>
+                                <div class="flex gap-2 mt-4">
+                                    <a href="{% url 'user_dashboard' %}" class="flex-1 px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white text-center rounded-lg hover:from-teal-700 hover:to-teal-800 transition font-semibold text-sm">
+                                        🚀 Quick Book
+                                    </a>
+                                </div>
+                            </div>
                             {% endfor %}
                         </div>
-                    {% else %}
+                        {% else %}
                         <div class="text-center py-12">
                             <span class="text-6xl mb-4 block">💔</span>
-                            <p class="text-gray-600 font-semibold">You haven't favorited any gyms yet.</p>
-                            <p class="text-sm text-gray-500 mt-2">Start exploring and mark your favorites!</p>
-                            <a href="{% url 'user_dashboard' %}" class="inline-block mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition">
-                                Find Gyms
-                            </a>
+                            <p class="text-gray-600 dark:text-gray-300 font-semibold">No favorites yet</p>
+                            <a href="{% url 'user_dashboard' %}" class="inline-block mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition">Find Gyms</a>
                         </div>
-                    {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div id="historyContent" class="tab-content hidden">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-10 shadow-lg border border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center justify-between mb-8">
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                📅 Visit History
+                            </h3>
+                            <!-- Filter Options -->
+                            <select id="historyFilter" onchange="filterHistory()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500">
+                                <option value="all">All Time</option>
+                                <option value="month">This Month</option>
+                                <option value="3months">Last 3 Months</option>
+                            </select>
+                        </div>
+                        <div id="historyList">
+                            <div class="space-y-5">
+                                <div class="skeleton h-24 rounded-xl"></div>
+                                <div class="skeleton h-24 rounded-xl"></div>
+                                <div class="skeleton h-24 rounded-xl"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievements Tab -->
+                <div id="achievementsContent" class="tab-content hidden">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-10 shadow-lg border border-gray-100 dark:border-gray-700">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-2">
+                            🏆 Achievements
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+                            {% for achievement in achievements %}
+                            <div class="border-2 {{ achievement.unlocked|yesno:'border-yellow-400,border-gray-300 dark:border-gray-600' }} rounded-xl p-8 text-center transition-all hover-lift {{ achievement.unlocked|yesno:'bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20,opacity-50' }}">
+                                <div class="text-5xl mb-4 {{ achievement.unlocked|yesno:'animate-pulse,grayscale' }}">{{ achievement.icon }}</div>
+                                <p class="font-bold text-gray-900 dark:text-white">{{ achievement.name }}</p>
+                                {% if achievement.unlocked %}
+                                <span class="text-xs text-green-600 dark:text-green-400 font-semibold">✓ Unlocked</span>
+                                {% else %}
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Locked</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Feed Tab -->
+                <div id="activityContent" class="tab-content hidden">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-100 dark:border-gray-700">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-2">
+                            📊 Recent Activity
+                        </h3>
+                        <div class="space-y-6">
+                            {% if recent_bookings %}
+                                {% for booking in recent_bookings %}
+                                <div class="relative pl-16 pb-6 timeline-item">
+                                    <div class="absolute left-0 top-0 w-12 h-12 rounded-full bg-gradient-to-br from-teal-400 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
+                                        {{ forloop.counter }}
+                                    </div>
+                                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-md transition-all">
+                                        <p class="font-semibold text-gray-900 dark:text-white">{{ booking.gym_name }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            {% if booking.status == 'booked' %}✅ Booked
+                                            {% elif booking.status == 'checked_in' %}🔥 Checked In
+                                            {% elif booking.status == 'completed' %}✓ Completed
+                                            {% elif booking.status == 'cancelled' %}❌ Cancelled
+                                            {% endif %}
+                                        </p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                            {{ booking.booked_at|date:"M d, Y • g:i A" }}
+                                        </p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                            <div class="text-center py-12">
+                                <span class="text-6xl mb-4 block">📭</span>
+                                <p class="text-gray-600 dark:text-gray-300 font-semibold">No recent activity</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Dark Mode Toggle
+function toggleDarkMode() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.getElementById('themeIcon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+}
+
+// Load theme on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('themeIcon').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+});
+
+// Tab Switching
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+    document.querySelectorAll('[id$="Tab"]').forEach(tab => {
+        tab.classList.remove('bg-gradient-to-r', 'from-teal-600', 'to-teal-700', 'text-white', 'shadow-md');
+        tab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+    });
+    
+    document.getElementById(tabName + 'Content').classList.remove('hidden');
+    const activeTab = document.getElementById(tabName + 'Tab');
+    activeTab.classList.add('bg-gradient-to-r', 'from-teal-600', 'to-teal-700', 'text-white', 'shadow-md');
+    activeTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
+    
+    if (tabName === 'history') loadHistory();
+}
+
+// Copy Referral Code
+function copyReferral(code) {
+    navigator.clipboard.writeText(code);
+    alert('Referral code copied: ' + code);
+}
+
+// Load History with Filter
+let allBookings = [];
+async function loadHistory() {
+    try {
+        const response = await fetch('/booking-history/');
+        const data = await response.json();
+        allBookings = data.bookings || [];
+        renderHistory(allBookings);
+    } catch (error) {
+        console.error('Error loading history:', error);
+    }
+}
+
+function filterHistory() {
+    const filter = document.getElementById('historyFilter').value;
+    const now = new Date();
+    let filtered = allBookings;
+    
+    if (filter === 'month') {
+        const oneMonthAgo = new Date(now.setMonth(now.getMonth() - 1));
+        filtered = allBookings.filter(b => new Date(b.booked_at) >= oneMonthAgo);
+    } else if (filter === '3months') {
+        const threeMonthsAgo = new Date(now.setMonth(now.getMonth() - 3));
+        filtered = allBookings.filter(b => new Date(b.booked_at) >= threeMonthsAgo);
+    }
+    
+    renderHistory(filtered);
+}
+
+function renderHistory(bookings) {
+    const historyList = document.getElementById('historyList');
+    if (bookings.length === 0) {
+        historyList.innerHTML = `
+            <div class="text-center py-12">
+                <span class="text-6xl mb-4 block">📭</span>
+                <p class="text-gray-600 dark:text-gray-300 font-semibold">No bookings found</p>
+            </div>
+        `;
+        return;
+    }
+    
+    historyList.innerHTML = `
+        <div class="space-y-5">
+            ${bookings.map(booking => `
+                <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-teal-300 hover:shadow-lg transition-all animate-fade-in">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-900 dark:text-white">${booking.gym_name}</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">📅 ${booking.booking_date_display}</p>
+                            ${booking.time_slot && booking.time_slot !== '—' ? `<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">🕐 ${booking.time_slot}</p>` : ''}
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex px-4 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(booking.status)}">
+                                ${booking.status === 'booked' ? '✅ Booked' : booking.status === 'cancelled' ? '❌ Cancelled' : '✓ ' + booking.status}
+                            </span>
+                            <p class="text-sm font-bold text-purple-600 mt-3">-${booking.credits_charged} cr</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'booked': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+        'checked_in': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+        'completed': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+        'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+    };
+    return colors[status] || colors['booked'];
+}
+</script>
+
 {% endblock %}
