@@ -203,7 +203,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Required for `collectstatic`
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -215,11 +215,19 @@ if theme_static_dir.exists():
     STATICFILES_DIRS.append(theme_static_dir)
 
 # WhiteNoise configuration for serving static files in production
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+# Use StaticFilesStorage instead of CompressedManifestStaticFilesStorage to avoid manifest issues
+if not DEBUG:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 # Media files (User uploads)
 MEDIA_URL = '/media/'
