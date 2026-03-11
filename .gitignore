@@ -19,6 +19,8 @@ local_settings.py
 db.sqlite3
 media/
 staticfiles/
+.env
+.env.local
 
 # IDEs and editors
 .vscode/
