@@ -3,7 +3,7 @@
 {% block content %}
 <div class="min-h-screen bg-gradient-to-b from-white to-gray-50">
     <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-teal-600 via-purple-600 to-pink-600 text-white py-16 relative overflow-hidden">
+    <div class="bg-gradient-to-r from-teal-600 via-purple-600 to-pink-600 text-white py-16 relative overflow-hidden shadow-xl">
         <div class="absolute inset-0 opacity-10 mix-blend-multiply" style="background-image: radial-gradient(circle at 20% 50%, white, transparent 50%), radial-gradient(circle at 80% 50%, white, transparent 50%)"></div>
         <div class="container mx-auto px-6 relative">
             <h1 class="text-4xl font-bold">👋 Welcome back, {{ user.first_name|default:user.username }}!</h1>
@@ -16,13 +16,13 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12">
             <!-- Credits Card -->
             <div class="group bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-teal-200 transition-all duration-300 overflow-hidden relative">
-                <div class="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div class="relative">
                     <div class="flex items-center justify-between mb-3">
                         <p class="text-gray-600 text-sm font-semibold">Available Credits</p>
                         <span class="text-3xl">💳</span>
                     </div>
-                    <p class="text-4xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent" id="userCreditsDisplay" data-credit-balance>{{ user.credits|default:0 }}</p>
+                    <p class="text-4xl font-bold text-indigo-600" id="userCreditsDisplay" data-credit-balance>{{ user.credits|default:0 }}</p>
                 </div>
             </div>
             
@@ -80,7 +80,7 @@
                            class="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                     <button type="submit" 
                             id="findGymsBtn"
-                            class="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 whitespace-nowrap">
+                            class="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 whitespace-nowrap shadow-lg">
                         Search
                     </button>
                 </form>
@@ -223,7 +223,7 @@
             <button type="button" id="modalCancelBtn2" class="flex-1 py-3 px-4 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-100 transition-all">
                 Cancel
             </button>
-            <button type="button" id="modalConfirmBtn" disabled class="flex-2 flex-grow py-3 px-6 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold shadow-lg hover:from-teal-700 hover:to-teal-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+            <button type="button" id="modalConfirmBtn" disabled class="flex-2 flex-grow py-3 px-6 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-bold shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed">
                 Confirm Booking
             </button>
         </div>
@@ -720,16 +720,43 @@ async function loadBookings() {
             // Show latest 5 on dashboard, link to full calendar
             const preview = data.bookings.slice(0, 5);
             container.innerHTML = preview.map(b => `
-                <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0" id="booking-row-${b.id}">
-                    <div class="min-w-0 flex-1">
-                        <p class="font-semibold text-gray-800 text-sm truncate">${b.gym_name}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">${b.booking_date_display}${b.time_slot && b.time_slot !== '—' ? ' &nbsp;·&nbsp; ' + b.time_slot : ''}</p>
+                <div class="py-3 border-b border-gray-100 last:border-0" id="booking-row-${b.id}">
+                    <div class="flex items-center justify-between">
+                        <div class="min-w-0 flex-1">
+                            <p class="font-semibold text-gray-800 text-sm truncate">${b.gym_name}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">${b.booking_date_display}${b.time_slot && b.time_slot !== '—' ? ' &nbsp;·&nbsp; ' + b.time_slot : ''}</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                            <span class="text-xs font-semibold text-red-500">−${b.credits_charged}cr</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${statusColors[b.status] || 'bg-gray-100 text-gray-600'}">${b.status}</span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0 ml-2">
-                        <span class="text-xs font-semibold text-red-500">−${b.credits_charged}cr</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${statusColors[b.status] || 'bg-gray-100 text-gray-600'}">${b.status}</span>
-                        ${b.status === 'booked' ? `<button onclick="cancelBooking('${b.id}')" class="text-xs px-2 py-0.5 rounded bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors font-semibold">Cancel</button>` : ''}
+                    
+                    ${b.status !== 'cancelled' && b.status !== 'completed' ? `
+                    <div class="mt-2 relative">
+                        <button onclick="toggleDashboardBookingMenu('${b.id}')" class="text-xs bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded font-medium transition-colors">
+                            ⚡ Actions
+                        </button>
+                        <div id="dash-menu-${b.id}" class="hidden absolute z-10 mt-1 bg-white border-2 border-teal-200 rounded-lg shadow-lg p-1.5 space-y-0.5 min-w-[160px]">
+                            ${b.status === 'booked' ? `
+                            <button onclick="generateOTPDashboard('${b.id}')" class="w-full text-left px-3 py-1.5 hover:bg-teal-50 rounded text-xs font-medium text-gray-700">
+                                🔑 Generate OTP
+                            </button>
+                            ` : ''}
+                            ${b.status === 'checked_in' ? `
+                            <button onclick="endWorkoutDashboard('${b.id}')" class="w-full text-left px-3 py-1.5 hover:bg-green-50 rounded text-xs font-medium text-green-700">
+                                ✅ End Workout
+                            </button>
+                            ` : ''}
+                            <button onclick="getDirectionsDashboard('${b.id}')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 rounded text-xs font-medium text-gray-700">
+                                🗺️ Directions
+                            </button>
+                            <button onclick="cancelBookingDashboard('${b.id}')" class="w-full text-left px-3 py-1.5 hover:bg-red-50 rounded text-xs font-medium text-red-600">
+                                ❌ Cancel
+                            </button>
+                        </div>
                     </div>
+                    ` : ''}
                 </div>
             `).join('') + (data.bookings.length > 5 ? `<a href="{% url 'booking_calendar' %}" class="block text-center mt-3 text-sm text-teal-600 hover:text-teal-700 font-semibold">View all ${data.bookings.length} bookings →</a>` : '');
         } catch (e) {
@@ -802,6 +829,112 @@ async function cancelBooking(bookingId) {
         alert('Network error. Please try again.');
         if (btn) { btn.disabled = false; btn.textContent = 'Cancel'; }
     }
+}
+
+// ── Dashboard Booking Actions ─────────────────────────────────────────────
+function toggleDashboardBookingMenu(bookingId) {
+    const menu = document.getElementById(`dash-menu-${bookingId}`);
+    // Close all other menus
+    document.querySelectorAll('[id^="dash-menu-"]').forEach(m => {
+        if (m.id !== `dash-menu-${bookingId}`) m.classList.add('hidden');
+    });
+    menu.classList.toggle('hidden');
+}
+
+async function generateOTPDashboard(bookingId) {
+    try {
+        const response = await fetch('/generate-otp/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+            },
+            body: JSON.stringify({ booking_id: bookingId })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`Your Check-in OTP:\n\n${data.otp}\n\nShow this code to the gym staff for check-in.`);
+        } else {
+            alert('Error: ' + (data.error || 'Failed to generate OTP'));
+        }
+    } catch (error) {
+        alert('Request failed. Please try again.');
+        console.error(error);
+    }
+}
+
+async function getDirectionsDashboard(bookingId) {
+    try {
+        const response = await fetch(`/booking-details/${bookingId}/`);
+        const data = await response.json();
+        
+        if (data.success && data.gym_location) {
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.gym_location)}`;
+            window.open(mapsUrl, '_blank');
+        } else {
+            alert('Gym location not available');
+        }
+    } catch (error) {
+        alert('Request failed. Please try again.');
+        console.error(error);
+    }
+}
+
+async function getDirectionsDashboard(bookingId) {
+    try {
+        const response = await fetch(`/booking-details/${bookingId}/`);
+        const data = await response.json();
+        
+        if (data.success && data.gym_location) {
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.gym_location)}`;
+            window.open(mapsUrl, '_blank');
+        } else {
+            alert('Gym location not available');
+        }
+    } catch (error) {
+        alert('Request failed. Please try again.');
+        console.error(error);
+    }
+}
+
+async function endWorkoutDashboard(bookingId) {
+    if (!confirm('End your workout session now?')) return;
+    
+    try {
+        const response = await fetch('/end-workout/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+            },
+            body: JSON.stringify({ booking_id: bookingId })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ Workout completed!\n\nSession Duration: ' + (data.session_duration || 'N/A'));
+            // Reload bookings and stats
+            loadBookings();
+            refreshDashboardStats();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to end workout'));
+        }
+    } catch (error) {
+        alert('Request failed. Please try again.');
+        console.error(error);
+    }
+    
+    // Close menu
+    const menu = document.getElementById(`dash-menu-${bookingId}`);
+    if (menu) menu.classList.add('hidden');
+}
+
+async function cancelBookingDashboard(bookingId) {
+    await cancelBooking(bookingId);
+    // Close menu after cancellation
+    const menu = document.getElementById(`dash-menu-${bookingId}`);
+    if (menu) menu.classList.add('hidden');
 }
 
 var TIME_SLOTS = [
@@ -959,8 +1092,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p class="text-green-700 mt-1">✓ <strong>${data.gym_name}</strong></p>
                         <p class="text-green-700">✓ Date: <strong>${new Date(date + 'T00:00:00').toLocaleDateString('en-IN', {weekday:'short',day:'numeric',month:'long',year:'numeric'})}</strong></p>
                         <p class="text-green-700">✓ Time: <strong>${slot}</strong></p>
-                        <p class="text-green-700">✓ Credits deducted: <strong>${data.charged}</strong> &nbsp;|  New balance: <strong>${data.new_balance}</strong></p>
-                        <a href="{% url 'booking_calendar' %}" class="inline-block mt-2 text-teal-700 font-semibold underline">View in Calendar →</a>
+                        <p class="text-green-700">✓ Credits deducted: <strong>${data.charged}</strong> &nbsp;|  New balance: <strong>${data.new_balance}</strong></p>                        <p class="text-teal-700 mt-2 text-sm">💡 Tip: Click on your booking to generate OTP for check-in</p>                        <a href="{% url 'booking_calendar' %}" class="inline-block mt-2 text-teal-700 font-semibold underline">View in Calendar →</a>
                     </div>
                 </div>`;
             successMessage.style.display = 'block';

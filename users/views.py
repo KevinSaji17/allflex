@@ -10,8 +10,9 @@ from accounts.db_utils import (
     get_gym_booking_model
 )
 from allflex.gym_recommender import get_gyms_by_pincode
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 import json
+import pytz
 from users.services.booking_service import (
     check_duplicate_booking,
     validate_booking_date,
@@ -22,6 +23,13 @@ from users.services.booking_service import (
     get_dashboard_stats as _get_dashboard_stats,
     BOOKING_COST,
 )
+from users.gps_utils import (
+    haversine_distance,
+    is_within_proximity,
+    validate_gps_coordinates,
+    format_distance,
+)
+from users.otp_utils import generate_otp, validate_otp
 
 # Credits cost per gym tier (1 booking)
 TIER_CREDITS = TIER_CREDIT_COSTS
@@ -234,6 +242,17 @@ def find_gyms_by_pincode(request):
         gym_data = get_gyms_by_pincode(location)  # Uses location-based search
         
         print(f"[INFO] Got {len(gym_data)} results from AI for location: {location}")
+        
+        # INJECT TEST GYM: Kevin's Fitness Hub for Mumbai/400001 searches
+        location_lower = location.lower()
+        if '400001' in location or 'mumbai' in location_lower or 'fort' in location_lower or 'mah' in location_lower:
+            print(f"[INFO] Injecting Kevin's Fitness Hub into results for Mumbai area")
+            # Add Kevin's gym to the beginning of results
+            if isinstance(gym_data, dict) and 'error' not in gym_data:
+                gym_data = {"Kevin's Fitness Hub": {"distance": "1.2 km", "rating": 4.7}} | gym_data
+            elif not gym_data or 'error' in gym_data:
+                # If no results or error, return only Kevin's gym
+                gym_data = {"Kevin's Fitness Hub": {"distance": "1.2 km", "rating": 4.7}}
 
         # Try to enrich with DB gym IDs when names match approved gyms
         # Wrapped in its own try/except so a DB timeout never kills the whole response
@@ -407,7 +426,7 @@ def create_booking(request):
 
         deduct_credits(user, cost, description=f'Booking at {display_name}')
 
-        # Create booking
+        # Create booking (OTP will be generated on-demand when user requests it)
         booking_kwargs = dict(
             user=user,
             gym_name=display_name,
@@ -416,13 +435,15 @@ def create_booking(request):
             booking_date=booking_date,
             time_slot=time_slot,
             notes='Booked via dashboard',
+            otp='',
+            otp_verified=False,
         )
         if gym_obj:
             booking_kwargs['gym'] = gym_obj
 
         booking = GymBooking.objects.create(**booking_kwargs)
 
-        # Update fitness profile stats
+        # Update fitness profile stats (only credits spent, visits counted on checkout)
         try:
             UserFitnessProfile = get_user_fitness_profile_model()
             if is_mongodb():
@@ -430,12 +451,12 @@ def create_booking(request):
                 fitness_profile = UserFitnessProfile.objects(user=user).first()
                 if not fitness_profile:
                     fitness_profile = UserFitnessProfile(user=user)
-                fitness_profile.total_visits = fitness_profile.total_visits + 1
+                # Only track credits spent here, visits are tracked on checkout
                 fitness_profile.total_credits_spent = fitness_profile.total_credits_spent + cost
                 fitness_profile.save()
             else:
                 fitness_profile, created = UserFitnessProfile.objects.get_or_create(user=user)
-                fitness_profile.total_visits += 1
+                # Only track credits spent here, visits are tracked on checkout
                 fitness_profile.total_credits_spent += cost
                 fitness_profile.save()
         except Exception as e:
@@ -537,8 +558,9 @@ def cancel_booking(request, booking_id):
                 status=400,
             )
 
-        # Refund credits
-        refund_amount = booking.credits_charged or BOOKING_COST
+        # Refund 25% of credits as whole number
+        full_amount = booking.credits_charged or BOOKING_COST
+        refund_amount = int(full_amount * 0.25)  # 25% refund, rounded down to whole number
         refund_credits(user, refund_amount, description=f'Refund for cancelled booking #{booking_id}')
 
         # Log the refund transaction
@@ -551,7 +573,7 @@ def cancel_booking(request, booking_id):
         log_transaction(
             user, gym_obj,
             credits_delta=refund_amount,
-            tx_type='refund',
+            tx_type='adjustment',
             notes=f'Refund: cancelled booking at {booking.gym_name} on '
                   f'{booking.booking_date.strftime("%d %b %Y") if booking.booking_date else "N/A"} (#{booking_id})',
         )
@@ -925,6 +947,17 @@ def user_profile(request):
         # Update profile
         try:
             if fitness_profile:
+                # Handle profile photo upload
+                if 'profile_photo' in request.FILES:
+                    # Delete old photo if it exists
+                    if fitness_profile.profile_photo:
+                        try:
+                            fitness_profile.profile_photo.delete(save=False)
+                        except:
+                            pass
+                    fitness_profile.profile_photo = request.FILES['profile_photo']
+                
+                # Update other fields
                 fitness_profile.current_weight = request.POST.get('current_weight') or None
                 fitness_profile.target_weight = request.POST.get('target_weight') or None
                 fitness_profile.height = request.POST.get('height') or None
@@ -1055,3 +1088,395 @@ def booking_history(request):
     except Exception as e:
         print(f"[ERROR] booking_history: {e}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(['POST'])
+def gym_checkin(request):
+    """
+    Check-in to gym with GPS verification and fraud prevention.
+    Requires: booking_id, user_latitude, user_longitude
+    """
+    try:
+        data = json.loads(request.body)
+        booking_id = data.get('booking_id')
+        user_lat = data.get('latitude')
+        user_lon = data.get('longitude')
+        
+        # Validate inputs
+        if not booking_id:
+            return JsonResponse({'success': False, 'error': 'Booking ID is required'}, status=400)
+        
+        if user_lat is None or user_lon is None:
+            return JsonResponse({'success': False, 'error': 'GPS location is required for check-in'}, status=400)
+        
+        # Validate GPS coordinates
+        if not validate_gps_coordinates(float(user_lat), float(user_lon)):
+            return JsonResponse({'success': False, 'error': 'Invalid GPS coordinates'}, status=400)
+        
+        # Get booking
+        GymBooking = get_gym_booking_model()
+        
+        if is_mongodb():
+            booking = GymBooking.objects(id=booking_id, user=request.user).first()
+        else:
+            booking = GymBooking.objects.filter(id=booking_id, user=request.user).first()
+        
+        if not booking:
+            return JsonResponse({'success': False, 'error': 'Booking not found'}, status=404)
+        
+        # Check if already checked in
+        if booking.status == 'checked_in':
+            return JsonResponse({'success': False, 'error': 'Already checked in. Use check-out to complete session.'}, status=400)
+        
+        if booking.status == 'completed':
+            return JsonResponse({'success': False, 'error': 'This booking is already completed'}, status=400)
+        
+        # Get gym details
+        gym = booking.gym
+        if not gym:
+            return JsonResponse({'success': False, 'error': 'Gym information not available'}, status=404)
+        
+        # Check if gym has GPS coordinates
+        if gym.latitude is None or gym.longitude is None:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Gym location not configured. Please contact gym owner.'
+            }, status=400)
+        
+        # Verify GPS proximity (within 100 meters)
+        is_close, actual_distance = is_within_proximity(
+            float(user_lat), 
+            float(user_lon),
+            float(gym.latitude),
+            float(gym.longitude),
+            max_distance_meters=100.0
+        )
+        
+        if not is_close:
+            return JsonResponse({
+                'success': False,
+                'error': f'You must be at the gym to check in. You are {format_distance(actual_distance)} away.',
+                'distance': format_distance(actual_distance)
+            }, status=403)
+        
+        # Check for duplicate check-ins today (fraud prevention)
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = today_start + timedelta(days=1)
+        
+        if is_mongodb():
+            today_checkins = GymBooking.objects(
+                user=request.user,
+                gym=gym,
+                checked_in_at__gte=today_start,
+                checked_in_at__lt=today_end,
+                status__in=['checked_in', 'completed']
+            ).count()
+        else:
+            today_checkins = GymBooking.objects.filter(
+                user=request.user,
+                gym=gym,
+                checked_in_at__gte=today_start,
+                checked_in_at__lt=today_end,
+                status__in=['checked_in', 'completed']
+            ).count()
+        
+        if today_checkins > 0:
+            return JsonResponse({
+                'success': False,
+                'error': 'You have already checked in to this gym today. Cooldown: 1 check-in per gym per day.'
+            }, status=403)
+        
+        # Perform check-in
+        booking.status = 'checked_in'
+        # Use IST timezone
+        ist = pytz.timezone('Asia/Kolkata')
+        booking.checked_in_at = datetime.now(ist).replace(tzinfo=None)
+        booking.check_in_latitude = float(user_lat)
+        booking.check_in_longitude = float(user_lon)
+        booking.save()
+        
+        # Update user streak
+        update_streak(request.user)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully checked in to {gym.name}',
+            'checked_in_at': booking.checked_in_at.isoformat(),
+            'distance': format_distance(actual_distance)
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        print(f"[ERROR] gym_checkin: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(['POST'])
+def gym_checkout(request):
+    """
+    Check-out from gym and calculate session duration.
+    Requires: booking_id
+    """
+    try:
+        data = json.loads(request.body)
+        booking_id = data.get('booking_id')
+        
+        if not booking_id:
+            return JsonResponse({'success': False, 'error': 'Booking ID is required'}, status=400)
+        
+        # Get booking
+        GymBooking = get_gym_booking_model()
+        
+        if is_mongodb():
+            booking = GymBooking.objects(id=booking_id, user=request.user).first()
+        else:
+            booking = GymBooking.objects.filter(id=booking_id, user=request.user).first()
+        
+        if not booking:
+            return JsonResponse({'success': False, 'error': 'Booking not found'}, status=404)
+        
+        # Check if checked in
+        if booking.status != 'checked_in':
+            return JsonResponse({'success': False, 'error': 'You must check in before checking out'}, status=400)
+        
+        if not booking.checked_in_at:
+            return JsonResponse({'success': False, 'error': 'Check-in time not recorded'}, status=400)
+        
+        # Perform check-out
+        checkout_time = datetime.now()
+        session_duration = checkout_time - booking.checked_in_at
+        
+        booking.status = 'completed'
+        booking.checked_out_at = checkout_time
+        booking.session_duration = session_duration
+        
+        if is_mongodb():
+            # Store duration in minutes for MongoDB
+            booking.session_duration_minutes = int(session_duration.total_seconds() / 60)
+        
+        booking.save()
+        
+        # Update fitness profile stats (increment visits on successful checkout)
+        try:
+            UserFitnessProfile = get_user_fitness_profile_model()
+            if is_mongodb():
+                profile = UserFitnessProfile.objects(user=request.user).first()
+            else:
+                profile = UserFitnessProfile.objects.filter(user=request.user).first()
+            
+            if profile:
+                # Only increment visits on completed checkout (not on booking)
+                profile.total_visits += 1
+                profile.save()
+        except Exception as e:
+            print(f"[WARNING] Could not update fitness profile: {e}")
+        
+        duration_minutes = int(session_duration.total_seconds() / 60)
+        duration_hours = duration_minutes // 60
+        duration_mins = duration_minutes % 60
+        
+        duration_str = f"{duration_hours}h {duration_mins}m" if duration_hours > 0 else f"{duration_mins}m"
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully checked out from {booking.gym.name if booking.gym else booking.gym_name}',
+            'checked_out_at': checkout_time.isoformat(),
+            'session_duration': duration_str,
+            'duration_minutes': duration_minutes
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        print(f"[ERROR] gym_checkout: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def end_workout(request):
+    """
+    User ends their workout session (same as checkout but clearer naming for OTP system).
+    Updates booking status to 'completed', records checkout time, and calculates session duration.
+    """
+    try:
+        data = json.loads(request.body)
+        booking_id = data.get('booking_id')
+        
+        if not booking_id:
+            return JsonResponse({'success': False, 'error': 'Booking ID is required'}, status=400)
+        
+        # Get booking model
+        GymBooking = get_gym_booking_model()
+        
+        # Fetch booking
+        if is_mongodb():
+            booking = GymBooking.objects(id=booking_id, user=request.user).first()
+        else:
+            booking = GymBooking.objects.filter(id=booking_id, user=request.user).first()
+        
+        if not booking:
+            return JsonResponse({'success': False, 'error': 'Booking not found'}, status=404)
+        
+        # Check if user is checked in
+        if booking.status != 'checked_in':
+            return JsonResponse({'success': False, 'error': 'You must be checked in to end workout'}, status=400)
+        
+        # Update booking - mark as completed
+        # Use IST timezone for checkout
+        ist = pytz.timezone('Asia/Kolkata')
+        checkout_time = datetime.now(ist).replace(tzinfo=None)
+        booking.status = 'completed'
+        booking.checked_out_at = checkout_time
+        
+        # Calculate session duration
+        if booking.checked_in_at:
+            # Convert to aware datetimes if needed
+            check_in = booking.checked_in_at
+            check_out = checkout_time
+            
+            if check_in.tzinfo is None:
+                check_in = check_in.replace(tzinfo=dt_timezone.utc)
+            if check_out.tzinfo is None:
+                check_out = check_out.replace(tzinfo=dt_timezone.utc)
+            
+            duration = check_out - check_in
+            booking.session_duration_minutes = int(duration.total_seconds() / 60)
+        
+        booking.save()
+        
+        # Update fitness profile stats
+        try:
+            from accounts.db_utils import get_user_fitness_profile_model
+            UserFitnessProfile = get_user_fitness_profile_model()
+            
+            if is_mongodb():
+                fitness_profile = UserFitnessProfile.objects(user=request.user).first()
+                if not fitness_profile:
+                    fitness_profile = UserFitnessProfile(user=request.user)
+                fitness_profile.total_gyms_visited += 1
+                fitness_profile.save()
+            else:
+                fitness_profile, _ = UserFitnessProfile.objects.get_or_create(user=request.user)
+                fitness_profile.total_gyms_visited += 1
+                fitness_profile.save()
+        except Exception as e:
+            print(f"[WARNING] Failed to update fitness profile: {e}")
+        
+        # Format duration for display
+        duration_str = 'N/A'
+        if booking.session_duration_minutes:
+            hours = booking.session_duration_minutes // 60
+            mins = booking.session_duration_minutes % 60
+            if hours > 0:
+                duration_str = f"{hours}h {mins}m"
+            else:
+                duration_str = f"{mins} minutes"
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Workout completed at {booking.gym.name if booking.gym else booking.gym_name}!',
+            'checked_out_at': checkout_time.strftime('%I:%M %p'),
+            'session_duration': duration_str,
+            'duration_minutes': booking.session_duration_minutes,
+            'gym': booking.gym.name if booking.gym else booking.gym_name
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid request format'}, status=400)
+    except Exception as e:
+        print(f"[ERROR] end_workout: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def generate_booking_otp(request):
+    """Generate OTP for a booking on-demand"""
+    try:
+        data = json.loads(request.body)
+        booking_id = data.get('booking_id')
+        
+        if not booking_id:
+            return JsonResponse({'error': 'Booking ID is required'}, status=400)
+        
+        # Get the booking
+        from accounts.mongo_models import GymBooking
+        try:
+            booking = GymBooking.objects.get(id=booking_id)
+        except GymBooking.DoesNotExist:
+            return JsonResponse({'error': 'Booking not found'}, status=404)
+        
+        # Verify the booking belongs to the logged-in user
+        if str(booking.user.id) != str(request.user.id):
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+        # Only generate OTP for booked or checked_in status
+        if booking.status not in ['booked', 'checked_in']:
+            return JsonResponse({'error': f'Cannot generate OTP for {booking.status} booking'}, status=400)
+        
+        # Generate new OTP
+        new_otp = generate_otp(6)
+        booking.otp = new_otp
+        booking.otp_verified = False  # Reset verification
+        booking.save()
+        
+        return JsonResponse({
+            'success': True,
+            'otp': new_otp,
+            'booking_id': str(booking.id)
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid request format'}, status=400)
+    except Exception as e:
+        print(f"[ERROR] generate_booking_otp: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def get_booking_details(request, booking_id):
+    """Get booking details including gym location for directions"""
+    try:
+        from accounts.mongo_models import GymBooking
+        try:
+            booking = GymBooking.objects.get(id=booking_id)
+        except GymBooking.DoesNotExist:
+            return JsonResponse({'error': 'Booking not found'}, status=404)
+        
+        # Verify the booking belongs to the logged-in user
+        if str(booking.user.id) != str(request.user.id):
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+        # Get gym location
+        gym_location = None
+        if booking.gym:
+            gym_location = booking.gym.location
+        
+        return JsonResponse({
+            'success': True,
+            'booking_id': str(booking.id),
+            'gym_name': booking.gym_name,
+            'gym_location': gym_location,
+            'status': booking.status,
+            'otp': booking.otp if booking.otp else None,
+            'booking_date': booking.booking_date.strftime('%Y-%m-%d') if booking.booking_date else None,
+            'time_slot': booking.time_slot if booking.time_slot else None,
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] get_booking_details: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=500)

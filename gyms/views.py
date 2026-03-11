@@ -4,7 +4,13 @@ from django.db.models import Sum
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django import forms
+from django.http import JsonResponse
 from accounts.db_utils import get_gym_model, get_booking_model, is_mongodb
+from datetime import timezone as dt_timezone, datetime
+from django.utils import timezone
+from users.otp_utils import validate_otp
+import json
+import pytz
 
 # Create your views here.
 
@@ -15,30 +21,200 @@ def gym_dashboard(request):
         return redirect('home')
 
     Gym = get_gym_model()
-    Booking = get_booking_model()
+    from accounts.db_utils import get_gym_booking_model
+    GymBooking = get_gym_booking_model()
 
     # Gyms owned by the logged-in user
     if is_mongodb():
         # MongoDB queries
-        owned_gyms = Gym.objects(owner=request.user)
-        bookings = Booking.objects(gym__in=owned_gyms).order_by('-timestamp')
-        total_bookings = bookings.count()
+        owned_gyms = list(Gym.objects(owner=request.user))
+        bookings_query = GymBooking.objects(gym__in=owned_gyms).order_by('-booked_at')
+        
+        # Since we now store times in IST as naive datetimes, 
+        # we don't need timezone conversion in the view.
+        # Django template filters will display them correctly.
+        bookings = list(bookings_query)
+        
+        total_bookings = bookings_query.count()
         # Calculate total wallet balance manually for MongoDB
         total_wallet_balance = sum(gym.wallet_balance for gym in owned_gyms)
+        
+        # Stats for completed visits (verified check-ins)
+        completed_visits = GymBooking.objects(gym__in=owned_gyms, status='completed').count()
+        currently_checked_in = GymBooking.objects(gym__in=owned_gyms, status='checked_in').count()
     else:
         # Django ORM queries
         owned_gyms = Gym.objects.filter(owner=request.user)
-        bookings = Booking.objects.filter(gym__in=owned_gyms).order_by('-timestamp')
+        bookings = GymBooking.objects.filter(gym__in=owned_gyms).order_by('-booked_at')
         total_bookings = bookings.count()
         total_wallet_balance = owned_gyms.aggregate(total_balance=Sum('wallet_balance'))['total_balance'] or 0.00
+        
+        # Stats for completed visits (verified check-ins)
+        completed_visits = GymBooking.objects.filter(gym__in=owned_gyms, status='completed').count()
+        currently_checked_in = GymBooking.objects.filter(gym__in=owned_gyms, status='checked_in').count()
 
     context = {
         'owned_gyms': owned_gyms,
         'bookings': bookings,
         'total_bookings': total_bookings,
         'total_wallet_balance': total_wallet_balance,
+        'completed_visits': completed_visits,
+        'currently_checked_in': currently_checked_in,
     }
     return render(request, 'gyms/dashboard.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def verify_booking_otp(request):
+    """
+    Gym owner verifies user's OTP to check them in.
+    Updates booking status to 'checked_in' and records check-in time.
+    """
+    # Only gym owners can verify OTPs
+    if request.user.role != 'gym_owner':
+        return JsonResponse({'success': False, 'error': 'Only gym owners can verify bookings'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        booking_id = data.get('booking_id')
+        entered_otp = data.get('otp')
+        
+        if not booking_id or not entered_otp:
+            return JsonResponse({'success': False, 'error': 'Booking ID and OTP are required'}, status=400)
+        
+        # Get booking model
+        from accounts.db_utils import get_gym_booking_model
+        GymBooking = get_gym_booking_model()
+        
+        # Fetch booking
+        if is_mongodb():
+            booking = GymBooking.objects(id=booking_id).first()
+        else:
+            booking = GymBooking.objects.filter(id=booking_id).first()
+        
+        if not booking:
+            return JsonResponse({'success': False, 'error': 'Booking not found'}, status=404)
+        
+        # Verify booking belongs to one of owner's gyms
+        Gym = get_gym_model()
+        if is_mongodb():
+            owned_gyms = list(Gym.objects(owner=request.user))
+        else:
+            owned_gyms = Gym.objects.filter(owner=request.user)
+        
+        if booking.gym not in owned_gyms:
+            return JsonResponse({'success': False, 'error': 'This booking is not for your gym'}, status=403)
+        
+        # Check if already checked in
+        if booking.status == 'checked_in':
+            return JsonResponse({'success': False, 'error': 'User already checked in'}, status=400)
+        
+        if booking.status == 'completed':
+            return JsonResponse({'success': False, 'error': 'This session is already completed'}, status=400)
+        
+        # Validate OTP
+        if not validate_otp(entered_otp, booking.otp):
+            return JsonResponse({'success': False, 'error': 'Invalid OTP. Please check and try again.'}, status=400)
+        
+        # Update booking - mark as checked in
+        booking.status = 'checked_in'
+        # Use IST timezone for check-in time
+        ist = pytz.timezone('Asia/Kolkata')
+        booking.checked_in_at = datetime.now(ist).replace(tzinfo=None)  # Store as naive datetime
+        booking.otp_verified = True
+        booking.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{booking.user.username} checked in successfully!',
+            'checked_in_at': booking.checked_in_at.strftime('%I:%M %p'),
+            'user': booking.user.username,
+            'gym': booking.gym.name if booking.gym else booking.gym_name
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid request format'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def end_workout(request):
+    """
+    User ends their workout session.
+    Updates booking status to 'completed', records checkout time, and calculates session duration.
+    """
+    try:
+        data = json.loads(request.body)
+        booking_id = data.get('booking_id')
+        
+        if not booking_id:
+            return JsonResponse({'success': False, 'error': 'Booking ID is required'}, status=400)
+        
+        # Get booking model
+        from accounts.db_utils import get_gym_booking_model
+        GymBooking = get_gym_booking_model()
+        
+        # Fetch booking
+        if is_mongodb():
+            booking = GymBooking.objects(id=booking_id, user=request.user).first()
+        else:
+            booking = GymBooking.objects.filter(id=booking_id, user=request.user).first()
+        
+        if not booking:
+            return JsonResponse({'success': False, 'error': 'Booking not found'}, status=404)
+        
+        # Check if user is checked in
+        if booking.status != 'checked_in':
+            return JsonResponse({'success': False, 'error': 'You must be checked in to end workout'}, status=400)
+        
+        # Update booking - mark as completed
+        booking.status = 'completed'
+        # Use IST timezone for check-out time
+        ist = pytz.timezone('Asia/Kolkata')
+        booking.checked_out_at = datetime.now(ist).replace(tzinfo=None)  # Store as naive datetime
+        
+        # Calculate session duration
+        if booking.checked_in_at and booking.checked_out_at:
+            # Convert to aware datetimes if needed
+            check_in = booking.checked_in_at
+            check_out = booking.checked_out_at
+            
+            if check_in.tzinfo is None:
+                check_in = check_in.replace(tzinfo=dt_timezone.utc)
+            if check_out.tzinfo is None:
+                check_out = check_out.replace(tzinfo=dt_timezone.utc)
+            
+            duration = check_out - check_in
+            booking.session_duration_minutes = int(duration.total_seconds() / 60)
+        
+        booking.save()
+        
+        # Format duration for display
+        duration_str = 'N/A'
+        if booking.session_duration_minutes:
+            hours = booking.session_duration_minutes // 60
+            mins = booking.session_duration_minutes % 60
+            if hours > 0:
+                duration_str = f"{hours}h {mins}m"
+            else:
+                duration_str = f"{mins} minutes"
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Workout completed!',
+            'checked_out_at': booking.checked_out_at.strftime('%I:%M %p'),
+            'session_duration': duration_str,
+            'duration_minutes': booking.session_duration_minutes,
+            'gym': booking.gym.name if booking.gym else booking.gym_name
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid request format'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 def gym_browse(request):

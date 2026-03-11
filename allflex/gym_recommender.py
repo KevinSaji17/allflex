@@ -9,6 +9,15 @@ from django.conf import settings
 # These are only shown if the API key is missing or invalid
 # With a valid API key, Gemini will return REAL gyms from the actual location
 DEMO_GYMS = {
+    "Kevin's Fitness Hub": {
+        "distance": "1.0 km",
+        "rating": "4.7",
+        "location": "123 Main Street, Mumbai",
+        "has_ac": True,
+        "has_dressing_room": True,
+        "has_washroom": True,
+        "has_music": True
+    },
     "Gold's Gym Central": {
         "distance": "1.2 km",
         "rating": "4.5",

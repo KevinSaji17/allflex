@@ -48,6 +48,7 @@ class GymBooking(models.Model):
         ('booked', 'Booked'),
         ('cancelled', 'Cancelled'),
         ('checked_in', 'Checked In'),
+        ('completed', 'Completed'),
     )
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='gym_bookings')
@@ -56,6 +57,11 @@ class GymBooking(models.Model):
     credits_charged = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='booked')
     booked_at = models.DateTimeField(default=timezone.now)
+    checked_in_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp when user checked in")
+    checked_out_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp when user checked out")
+    session_duration = models.DurationField(null=True, blank=True, help_text="Duration of gym session")
+    check_in_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="User's GPS location at check-in")
+    check_in_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="User's GPS location at check-in")
     notes = models.CharField(max_length=255, blank=True)
 
     class Meta:
@@ -83,6 +89,7 @@ class FavoriteGym(models.Model):
 class UserFitnessProfile(models.Model):
     """Track user's fitness progress and personal info"""
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='fitness_profile')
+    profile_photo = models.ImageField(upload_to='profile_photos/', null=True, blank=True, help_text="Profile photo")
     current_weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Weight in kg")
     target_weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Target weight in kg")
     height = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Height in cm")

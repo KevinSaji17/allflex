@@ -154,6 +154,8 @@ class Gym(Document):
     logo = StringField(null=True)  # Store filename or URL
     description = StringField(required=True)
     location = StringField(required=True, max_length=255)
+    latitude = FloatField(null=True)  # GPS latitude
+    longitude = FloatField(null=True)  # GPS longitude
     tier = IntField(required=True, choices=TIER_CHOICES)
     capacity = IntField(default=20, min_value=1)
     status = StringField(choices=STATUS_CHOICES, default='pending')
@@ -359,8 +361,15 @@ class GymBooking(Document):
     status = StringField(choices=STATUS_CHOICES, default='booked')
     booked_at = DateTimeField(default=datetime.utcnow)
     booking_date = DateTimeField(default=datetime.utcnow)   # the date user wants to visit
+    checked_in_at = DateTimeField(null=True)  # Timestamp when user checked in
+    checked_out_at = DateTimeField(null=True)  # Timestamp when user checked out
+    session_duration_minutes = IntField(null=True)  # Duration in minutes
+    check_in_latitude = FloatField(null=True)  # User's GPS location at check-in
+    check_in_longitude = FloatField(null=True)  # User's GPS location at check-in
     time_slot = StringField(default='')                      # e.g. "06:00 AM – 07:00 AM"
     notes = StringField(default='')
+    otp = StringField(default='', max_length=6)  # 6-digit OTP for gym owner verification
+    otp_verified = BooleanField(default=False)  # Track if OTP has been verified
     
     meta = {
         'collection': 'gym_bookings',

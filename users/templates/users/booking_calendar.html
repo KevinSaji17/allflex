@@ -4,7 +4,7 @@
 {% block title %}My Booking Calendar – Allflex{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50 py-8 px-4">
+<div class="min-h-screen bg-gray-50 py-8 px-4">
   <div class="max-w-5xl mx-auto">
 
     <!-- Page Header -->
@@ -24,7 +24,7 @@
       <!-- ── Calendar Panel ─────────────────────────────────── -->
       <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <!-- Month Navigation -->
-        <div class="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-teal-600 to-teal-700">
+        <div class="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-teal-600 to-teal-700 shadow-lg">
           <button id="prevMonth" class="text-white hover:text-teal-200 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           </button>
@@ -61,8 +61,8 @@
       <div class="flex flex-col gap-4">
 
         <!-- Day Detail Panel (shown when day clicked) -->
-        <div id="dayDetail" class="hidden bg-white rounded-2xl shadow-sm border border-teal-200 p-5">
-          <h3 id="dayDetailTitle" class="text-base font-bold text-teal-700 mb-3"></h3>
+        <div id="dayDetail" class="hidden bg-white rounded-2xl shadow-xl border-2 border-teal-300 p-8 min-h-[200px]">
+          <h3 id="dayDetailTitle" class="text-2xl font-bold text-teal-700 mb-5"></h3>
           <div id="dayDetailContent"></div>
         </div>
 
@@ -75,7 +75,7 @@
         </div>
 
         <!-- Stats Card -->
-        <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl border border-teal-200 p-5">
+        <div class="bg-teal-100 dark:bg-teal-900/30 rounded-2xl border-2 border-teal-300 p-5">
           <h3 class="text-base font-bold text-teal-800 mb-3">My Stats</h3>
           <div class="grid grid-cols-2 gap-3">
             <div class="bg-white rounded-xl p-3 text-center shadow-sm">
@@ -131,10 +131,13 @@ async function fetchBookings() {
     }
 }
 
-// Group bookings by "YYYY-MM-DD" key
+// Group bookings by "YYYY-MM-DD" key (exclude cancelled)
 function bookingsByDate() {
     const map = {};
     allBookings.forEach(b => {
+        // Skip cancelled bookings
+        if (b.status === 'cancelled') return;
+        
         const key = b.booking_date || '';  // already "YYYY-MM-DD"
         if (!key) return;
         if (!map[key]) map[key] = [];
@@ -214,18 +217,45 @@ function showDayDetail(dateKey, day, bookings) {
     title.textContent = `${day} ${MONTHS[currentMonth]} ${currentYear}`;
 
     if (bookings.length === 0) {
-        content.innerHTML = '<p class="text-sm text-gray-400">No bookings on this day.</p>';
+        content.innerHTML = '<p class="text-base text-gray-400">No bookings on this day.</p>';
     } else {
         content.innerHTML = bookings.map(b => {
             const colors = STATUS_COLORS[b.status] || STATUS_COLORS.booked;
             return `
-            <div class="mb-3 last:mb-0 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                <p class="font-bold text-gray-800 text-sm">${b.gym_name}</p>
-                ${b.time_slot && b.time_slot !== '—' ? `<p class="text-xs text-teal-700 mt-0.5 font-medium">🕐 ${b.time_slot}</p>` : ''}
-                <div class="flex items-center gap-2 mt-1.5">
-                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${colors.chip}">${b.status.replace('_', ' ')}</span>
-                    <span class="text-xs text-red-500 font-semibold">−${b.credits_charged} credits</span>
+            <div class="mb-4 last:mb-0 p-5 rounded-xl bg-gray-50 border-2 border-gray-200 shadow-sm relative">
+                <p class="font-bold text-gray-800 text-lg">${b.gym_name}</p>
+                ${b.time_slot && b.time_slot !== '—' ? `<p class="text-sm text-teal-700 mt-1 font-medium">🕐 ${b.time_slot}</p>` : ''}
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="text-sm px-3 py-1 rounded-full font-semibold ${colors.chip}">${b.status.replace('_', ' ')}</span>
+                    <span class="text-sm text-red-500 font-semibold">−${b.credits_charged} credits</span>
                 </div>
+                
+                <!-- Actions Dropdown -->
+                ${b.status !== 'cancelled' && b.status !== 'completed' ? `
+                <div class="mt-3">
+                    <button onclick="toggleBookingMenu('${b.id}')" class="text-sm bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        ⚡ Actions
+                    </button>
+                    <div id="menu-${b.id}" class="hidden mt-2 bg-white border-2 border-teal-200 rounded-lg shadow-lg p-2 space-y-1">
+                        ${b.status === 'booked' ? `
+                        <button onclick="generateOTP('${b.id}')" class="w-full text-left px-4 py-2 hover:bg-teal-50 rounded text-sm font-medium text-gray-700">
+                            🔑 Generate OTP
+                        </button>
+                        ` : ''}
+                        ${b.status === 'checked_in' ? `
+                        <button onclick="endWorkout('${b.id}')" class="w-full text-left px-4 py-2 hover:bg-green-50 rounded text-sm font-medium text-green-700">
+                            ✅ End Workout
+                        </button>
+                        ` : ''}
+                        <button onclick="getDirections('${b.id}')" class="w-full text-left px-4 py-2 hover:bg-blue-50 rounded text-sm font-medium text-gray-700">
+                            🗺️ Directions
+                        </button>
+                        <button onclick="cancelBooking('${b.id}')" class="w-full text-left px-4 py-2 hover:bg-red-50 rounded text-sm font-medium text-red-600">
+                            ❌ Cancel Booking
+                        </button>
+                    </div>
+                </div>
+                ` : ''}
             </div>`;
         }).join('');
     }
@@ -269,20 +299,132 @@ function renderUpcoming() {
 // ── Stats ─────────────────────────────────────────────────────────────────
 function renderStats() {
     const now = new Date();
-    document.getElementById('statTotal').textContent = allBookings.length;
-    document.getElementById('statCredits').textContent = allBookings.reduce((s, b) => s + (b.credits_charged || 0), 0);
-    document.getElementById('statMonth').textContent = allBookings.filter(b => {
+    // Exclude cancelled bookings from all stats
+    const activeBookings = allBookings.filter(b => b.status !== 'cancelled');
+    
+    document.getElementById('statTotal').textContent = activeBookings.length;
+    document.getElementById('statCredits').textContent = activeBookings.reduce((s, b) => s + (b.credits_charged || 0), 0);
+    document.getElementById('statMonth').textContent = activeBookings.filter(b => {
         if (!b.booking_date) return false;
         const d = new Date(b.booking_date + 'T00:00:00');
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     }).length;
 
     const today = new Date(); today.setHours(0,0,0,0);
-    document.getElementById('statUpcoming').textContent = allBookings.filter(b => {
-        if (b.status === 'cancelled') return false;
+    document.getElementById('statUpcoming').textContent = activeBookings.filter(b => {
         if (!b.booking_date) return false;
         return new Date(b.booking_date + 'T00:00:00') >= today;
     }).length;
+}
+
+// ── Booking Actions ───────────────────────────────────────────────────────
+function toggleBookingMenu(bookingId) {
+    const menu = document.getElementById(`menu-${bookingId}`);
+    // Close all other menus
+    document.querySelectorAll('[id^="menu-"]').forEach(m => {
+        if (m.id !== `menu-${bookingId}`) m.classList.add('hidden');
+    });
+    menu.classList.toggle('hidden');
+}
+
+async function generateOTP(bookingId) {
+    try {
+        const response = await fetch('{% url "generate_booking_otp" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ booking_id: bookingId })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`Your Check-in OTP:\n\n${data.otp}\n\nShow this code to the gym staff for check-in.`);
+        } else {
+            alert('Error: ' + (data.error || 'Failed to generate OTP'));
+        }
+    } catch (error) {
+        alert('Request failed. Please try again.');
+        console.error(error);
+    }
+}
+
+async function getDirections(bookingId) {
+    try {
+        const response = await fetch(`/booking-details/${bookingId}/`);
+        const data = await response.json();
+        
+        if (data.success && data.gym_location) {
+            // Open Google Maps with gym location
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.gym_location)}`;
+            window.open(mapsUrl, '_blank');
+        } else {
+            alert('Gym location not available');
+        }
+    } catch (error) {
+        alert('Request failed. Please try again.');
+        console.error(error);
+    }
+}
+
+async function cancelBooking(bookingId) {
+    if (!confirm('Are you sure you want to cancel this booking?')) return;
+    
+    try {
+        const response = await fetch(`/cancel-booking/${bookingId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Booking cancelled successfully!');
+            // Reload bookings
+            await loadBookings();
+            renderCalendar();
+            renderUpcoming();
+            renderStats();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to cancel booking'));
+        }
+    } catch (error) {
+        alert('Request failed. Please try again.');
+        console.error(error);
+    }
+}
+
+async function endWorkout(bookingId) {
+    if (!confirm('End your workout session now?')) return;
+    
+    try {
+        const response = await fetch('{% url "user_end_workout" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ booking_id: bookingId })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ Workout completed!\n\nSession Duration: ' + (data.session_duration || 'N/A'));
+            // Reload bookings
+            await loadBookings();
+            renderCalendar();
+            renderUpcoming();
+            renderStats();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to end workout'));
+        }
+    } catch (error) {
+        alert('Request failed. Please try again.');
+        console.error(error);
+    }
 }
 
 // ── Month Navigation ──────────────────────────────────────────────────────

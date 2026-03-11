@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from gyms.admin_views import mongodb_gyms_view, mongodb_gym_edit, mongodb_gym_delete
 
 urlpatterns = [
@@ -29,3 +31,6 @@ urlpatterns = [
     path('admin-dashboard/', include('adminpanel.urls')),
     path('', include('users.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

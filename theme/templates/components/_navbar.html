@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between h-16">
             <div class="flex items-center gap-3">
                 <a href="{% url 'home' %}" class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">Ⓐ</div>
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-md">Ⓐ</div>
                     <span class="text-lg font-semibold text-slate-900 hidden sm:inline">ALLFLEX</span>
                 </a>
             </div>
@@ -16,6 +16,9 @@
 
             <div class="hidden md:flex items-center space-x-4">
                 {% if user.is_authenticated %}
+                    {% if user.role == 'gym_owner' %}
+                        <a href="{% url 'gym_dashboard' %}" class="text-sm text-teal-600 hover:text-teal-700 font-semibold">🏢 My Dashboard</a>
+                    {% endif %}
                     <a href="{% url 'user_profile' %}" class="text-sm text-slate-700 hover:text-teal-600 font-semibold">{{ user.first_name|default:user.username }}</a>
                     <form method="post" action="{% url 'logout' %}" class="inline">
                         {% csrf_token %}
@@ -23,7 +26,7 @@
                     </form>
                 {% else %}
                     <a href="{% url 'signup' %}" class="text-sm text-slate-700 hover:text-slate-900">Sign up</a>
-                    <a href="{% url 'login' %}" class="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Login</a>
+                    <a href="{% url 'login' %}" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-md hover:from-teal-700 hover:to-teal-800 shadow-sm transition-all">Login</a>
                 {% endif %}
             </div>
 

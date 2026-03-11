@@ -155,6 +155,8 @@ class Gym(models.Model):
     logo = models.ImageField(upload_to='gym_logos/', blank=True, null=True)
     description = models.TextField()
     location = models.CharField(max_length=255) # For Google Maps integration
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="GPS latitude")
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="GPS longitude")
     tier = models.IntegerField(choices=TIER_CHOICES)
     capacity = models.PositiveIntegerField(default=20)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -179,7 +180,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -196,6 +197,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'theme' / 'static',
 ]
+
+# WhiteNoise configuration for production static file serving
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (User uploads)
 MEDIA_URL = '/media/'
@@ -219,7 +223,10 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 days
 # CSRF Settings for development
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF cookie if needed
 CSRF_COOKIE_SAMESITE = 'Lax'  # Less restrictive for development
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
+# Support both local and production URLs
+CSRF_TRUSTED_ORIGINS = [h if h.startswith('http') else f'https://{h}' 
+                        for h in os.getenv('CSRF_TRUSTED_ORIGINS', 
+                        'http://localhost:8000,http://127.0.0.1:8000').split(',') if h.strip()]
 CSRF_USE_SESSIONS = False  # Use cookie-based CSRF (default, more reliable)
 
 # Session cookie settings
