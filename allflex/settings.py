@@ -38,6 +38,13 @@ RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
+# Add *.onrender.com domains (Render deployment)
+if not DEBUG or os.getenv('RENDER'):
+    ALLOWED_HOSTS.extend([
+        '.onrender.com',
+        'allflex.onrender.com',
+    ])
+
 
 # Application definition
 
@@ -245,6 +252,13 @@ CSRF_TRUSTED_ORIGINS = [
 # Automatically add Render domain to CSRF trusted origins
 if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+
+# Add Render domains explicitly
+if not DEBUG or os.getenv('RENDER'):
+    CSRF_TRUSTED_ORIGINS.extend([
+        'https://allflex.onrender.com',
+        'https://*.onrender.com',
+    ])
 
 CSRF_USE_SESSIONS = False  # Use cookie-based CSRF (default, more reliable)
 
