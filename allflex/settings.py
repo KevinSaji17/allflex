@@ -194,9 +194,12 @@ STATIC_URL = 'static/'
 
 # Required for `collectstatic`
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [
-    BASE_DIR / 'theme' / 'static',
-]
+
+# Only include theme/static if it exists (for development)
+STATICFILES_DIRS = []
+theme_static_dir = BASE_DIR / 'theme' / 'static'
+if theme_static_dir.exists():
+    STATICFILES_DIRS.append(theme_static_dir)
 
 # WhiteNoise configuration for serving static files in production
 STORAGES = {

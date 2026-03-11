@@ -3,6 +3,7 @@ python-dotenv>=1.0
 django-tailwind>=3.0
 google-genai>=1.0
 Pillow>=10.0
+pytz>=2024.1
 
 # Production Server
 gunicorn>=21.0
