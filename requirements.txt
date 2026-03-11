@@ -4,10 +4,6 @@ django-tailwind>=3.0
 google-genai>=1.0
 Pillow>=10.0
 
-# Production Server
-gunicorn>=21.2.0
-whitenoise>=6.6.0
-
 # MongoDB Integration
 mongoengine>=0.28.0
 pymongo>=4.6.0
